@@ -89,11 +89,14 @@ jobs:
          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
 
     - name: Scan Docker image with Trivy
-      run: |
-        ./trivy image --exit-code 1 --severity HIGH,CRITICAL imagename13579:latest
-
+      uses: aquasecurity/trivy-action@master
+      with:
+         image-ref: imagename13579:latest
+         severity: HIGH,CRITICAL
+         exit-code: 1
       continue-on-error: true
 
+    
     - name: Push Docker image
       uses: docker/build-push-action@v4
       with:
