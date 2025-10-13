@@ -55,10 +55,12 @@ jobs:
       run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
 
     - name: Run SonarQube Scanner
-      run: sonar-scanner
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        continue-on-error: true
+      run: |
+        /usr/bin/bash -echo
+        sonar-scanner 
+      continue-on-error: true
     
     - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v3
