@@ -2,10 +2,9 @@ name: Docker Image CI
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["  Terraform CICD "]
-    types:
-      - completed
+  push: 
+     branches:
+       - main
 
 permissions:
      contents: read
