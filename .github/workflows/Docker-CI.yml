@@ -74,14 +74,11 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
-        images: imagename13579
+        images: ${{ steps.acr.outputs.loginServer }}/imagename13579
         tags: |
           latest
           ${{ github.sha }}
           staging
-
-    - name: Login to Azure Container Registry
-      run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v4    
