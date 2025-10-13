@@ -83,6 +83,20 @@ git push
   - Web Slot 
   - Service Plan 
   - Azure container registry 
+## Steps to add sonarqube in pipeline 
+Install sonarquabe in docker 
+```
+ docker run -d --name sonarqube \
+  -p 9000:9000 \
+
+  docker start sonarqube
+
+  http://localhost:9000
+```
+- Your default password will be admin:admin
+- Change the password 
+- Go to Security -> Generate token -> 
+- Copy that token and then use in your pipeline 
 
 ## Conclusion 
 The project “Deploying a Microservices-Based Application Using a CI/CD Pipeline” successfully demonstrates the implementation of continuous integration and continuous deployment principles to achieve automated, reliable, and efficient software delivery.

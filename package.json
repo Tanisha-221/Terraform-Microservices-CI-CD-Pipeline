@@ -1,12 +1,25 @@
 {
-"name": "sample-node-app",
-"version": "1.0.0",
-"scripts": {
+  "name": "sample-node-app",
+  "version": "1.0.0",
+  "description": "A sample Node.js app with Vitest testing and CI/CD support",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
     "build": "echo 'Building the app...'",
-    "test": "echo 'Running tests...'",
-    "start": "node app.js"
-},
-"dependencies": {
-"express": "^4.18.2"
-}
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:unit": "vitest tests/unit",
+    "test:integration": "vitest tests/integration"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "supertest": "^6.3.3",
+    "vitest": "^3.2.4"
+  }
 }

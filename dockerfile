@@ -13,6 +13,8 @@ RUN npm install --production
 # Copy the rest of the application code
 COPY . .
 
+RUN npm install -g sonarqube-scanner
+
 # Expose the port your app listens on
 EXPOSE 80
 

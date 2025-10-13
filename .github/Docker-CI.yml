@@ -1,0 +1,114 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build project
+      run: npm run build
+
+    - name: Run ESLint
+      run: npm run lint
+      continue-on-error: true
+
+    - name: Run unit tests with Vitest
+      run: npm run test:unit
+      continue-on-error: true
+
+    - name: Run integration tests with Vitest
+      run: npm run test:integration
+      continue-on-error: true
+
+    - name: Run end-to-end tests with Vitest
+      run: npm run test:e2e
+      continue-on-error: true
+
+    - name: Upload coverage report 
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report 
+        path: coverage/ 
+
+    - name: List the files
+      run: ls -R coverage/
+
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Parse ACR credentials
+      id: acr
+      run: |
+          echo "username=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .username)" >> $GITHUB_OUTPUT
+          echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_OUTPUT
+          echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_OUTPUT
+
+    - name: Login to Azure Container Registry
+      run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
+
+    - name: Run SonarQube Scanner
+      run: sonar-scanner
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        continue-on-error: true
+    
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Extract Metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        tags: |
+          latest
+          ${{ github.sha }}
+
+    - name: Build Docker image (no push)
+      uses: docker/build-push-action@v4
+      with:
+         image: ${{ github.event.inputs.image_name }}
+         context: .
+         push: false
+         tags: ${{ github.event.inputs.image_name }}:latest
+         labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Install Trivy
+      run: |
+         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+
+    - name: Scan Docker image with Trivy
+      run: |
+        ./trivy image --exit-code 1 --severity HIGH,CRITICAL ${{ github.event.inputs.image_name }}:latest
+
+      continue-on-error: true
+
+    - name: Push Docker image
+  uses: docker/build-push-action@v4
+  with:
+    context: .
+    push: true
+    tags: ${{ github.event.inputs.image_name }}:latest
+    labels: ${{ steps.meta.outputs.labels }}
+
+
+
+  

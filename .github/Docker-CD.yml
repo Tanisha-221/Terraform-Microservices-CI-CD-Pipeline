@@ -1,0 +1,30 @@
+name: Docker Image CD
+
+on:
+    workflow_dispatch:
+       inputs:
+         docker_image:
+           description: 'The Docker image to deploy'
+           required: true
+    workflow_run:
+      workflows: ["Docker Image CI" , "Terraform CICD"]
+      types:
+        - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: T-node-web-app
+        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+        images: ${{ github.event.inputs.docker_image }}
