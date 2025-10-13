@@ -80,8 +80,9 @@ jobs:
          image: imagename13579
          context: .
          push: false
-         tags: ${{ github.event.inputs.image_name }}:latest
+         tags: imagename13579:latest
          labels: ${{ steps.meta.outputs.labels }}
+         outputs: type=docker
 
     - name: Install Trivy
       run: |
@@ -89,7 +90,7 @@ jobs:
 
     - name: Scan Docker image with Trivy
       run: |
-        ./trivy image --exit-code 1 --severity HIGH,CRITICAL ${{ github.event.inputs.image_name }}:latest
+        ./trivy image --exit-code 1 --severity HIGH,CRITICAL imagename13579:latest
 
       continue-on-error: true
 
