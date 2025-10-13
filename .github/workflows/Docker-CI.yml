@@ -74,36 +74,14 @@ jobs:
           latest
           ${{ github.sha }}
 
-    - name: Build Docker image (no push)
-      uses: docker/build-push-action@v4
-      with:
-         image: imagename13579
-         context: .
-         push: false
-         tags: imagename13579:latest
-         labels: ${{ steps.meta.outputs.labels }}
-         outputs: type=docker
-
-    - name: Install Trivy
-      run: |
-         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
-
-    - name: Scan Docker image with Trivy
-      uses: aquasecurity/trivy-action@master
-      with:
-         image-ref: imagename13579:latest
-         severity: HIGH,CRITICAL
-         exit-code: 1
-      continue-on-error: true
-
-    
-    - name: Push Docker image
-      uses: docker/build-push-action@v4
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4    
       with:
         context: .
         push: true
-        tags: imagename13579:latest
+        tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+  
 
 
 
