@@ -80,6 +80,7 @@ jobs:
         terraform plan -out=artifacts/tfplan.out -input=false \
           -var="acr_name=${ACR_NAME}" \
           -var="acr_sku=${ACR_SKU}"
+
     - name: Check tfplan file 
       run: ls -l artifacts/tfplan.out || echo "Plan file not found"
 
@@ -87,7 +88,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with: 
         name: terraform-plan
-        path: artifacts/tfplan.out
+        path: Infra-Terraform/artifacts/tfplan.out
     
 
     - name: List files
@@ -100,10 +101,12 @@ jobs:
       uses: actions/download-artifact@v4
       with:        
         name: terraform-plan
+        path: Infra-Terraform/artifacts/tfplan.out
+
     - name: Apply Terraform Plan
       env:
           ARM_SUBSCRIPTION_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
           ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
           ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
           ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
-      run: terraform apply -input=false artifacts/tfplan.out
+      run: terraform apply -input=false Infra-Terraform/artifacts/tfplan.out
