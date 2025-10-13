@@ -1,0 +1,87 @@
+name: 'Terraform CI'
+
+on:
+  push:
+    branches:
+      - main 
+
+permissions:
+  contents: write
+
+jobs:
+  terraform:
+    name: 'Terraform-ci'
+    runs-on: ubuntu-latest
+    environment: production
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./Infra-Terraform
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # Install the latest version of Terraform CLI
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+    
+    # Azure Login (using Service Principal)
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    # - name: Install jq
+    #   run: sudo apt-get install jq
+
+
+    # Initialize Terraform
+    - name: Terraform Init
+      run: terraform init
+
+    # Check Terraform format
+    - name: Terraform Format
+      run: terraform fmt -check
+
+    
+
+    # Run Terraform Plan
+    - name: Terraform Plan
+      env:
+          ARM_SUBSCRIPTION_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
+          ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+          ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
+          ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
+      run: |
+        mkdir -p artifacts 
+        terraform plan -out=artifacts/tfplan.out -input=false
+
+
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with: 
+        name: terraform-plan
+        path: artifacts/tfplan.out
+    
+    - name: List files
+      run: ls -R
+
+    - name: PWD path
+      run: pwd
+
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:        
+        name: terraform-plan
+    - name: Apply Terraform Plan
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      env:
+          ARM_SUBSCRIPTION_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
+          ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+          ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
+          ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
+      run: terraform apply -input=false artifacts/tfplan.out
