@@ -78,7 +78,9 @@ jobs:
       with: 
         name: terraform-plan
         path: artifacts/tfplan.out
-    
+    - name: Check tfplan file 
+      run: ls -l artifacts/tfplan.out || echo "Plan file not found"
+      
     - name: List files
       run: ls -R
 
