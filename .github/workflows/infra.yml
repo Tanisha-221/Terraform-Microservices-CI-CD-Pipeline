@@ -72,15 +72,16 @@ jobs:
         terraform plan -out=artifacts/tfplan.out -input=false \
           -var="acr_name=${ACR_NAME}" \
           -var="acr_sku=${ACR_SKU}"
-
+    - name: Check tfplan file 
+      run: ls -l artifacts/tfplan.out || echo "Plan file not found"
+      
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with: 
         name: terraform-plan
         path: artifacts/tfplan.out
-    - name: Check tfplan file 
-      run: ls -l artifacts/tfplan.out || echo "Plan file not found"
-      
+    
+
     - name: List files
       run: ls -R
 
