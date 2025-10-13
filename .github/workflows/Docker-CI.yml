@@ -85,7 +85,7 @@ jobs:
     - name: Build Docker image (no push)
       uses: docker/build-push-action@v4
       with:
-         image: ${{ github.event.inputs.image_name }}
+         image: containername123456
          context: .
          push: false
          tags: ${{ github.event.inputs.image_name }}:latest
@@ -102,12 +102,12 @@ jobs:
       continue-on-error: true
 
     - name: Push Docker image
-  uses: docker/build-push-action@v4
-  with:
-    context: .
-    push: true
-    tags: ${{ github.event.inputs.image_name }}:latest
-    labels: ${{ steps.meta.outputs.labels }}
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: ${{ github.event.inputs.image_name }}:latest
+        labels: ${{ steps.meta.outputs.labels }}
 
 
 
