@@ -6,7 +6,7 @@ on:
          docker_image:
            description: 'The Docker image to deploy'
            required: true
-           defaults: imagename13579:latest
+           defaults: ${{ steps.acr.outputs.loginServer }}/imagename13579
     workflow_run:
       workflows: ["Docker Image CI" , "Terraform CICD"]
       types:
