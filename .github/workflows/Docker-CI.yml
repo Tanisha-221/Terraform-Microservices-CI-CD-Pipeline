@@ -69,6 +69,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
+        image: imagename13579
         tags: |
           latest
           ${{ github.sha }}
