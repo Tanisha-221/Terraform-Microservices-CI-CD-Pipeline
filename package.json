@@ -7,9 +7,9 @@
     "start": "node app.js",
     "build": "echo 'Building the app...'",
     "lint": "eslint .",
-    "test": "vitest",
-    "test:unit": "vitest tests/unit",
-    "test:integration": "vitest tests/integration"
+    "test": "vitest", 
+    "test:unit": "vitest tests/unit/**/*.test.js", 
+    "test:integration": "vitest tests/integration/**/*.test.js" 
   },
   "keywords": [],
   "author": "",

@@ -2,11 +2,6 @@ name: Docker Image CD
 
 on:
     workflow_dispatch:
-       inputs:
-         docker_image:
-           description: 'The Docker image to deploy'
-           required: true
-           defaults: imagename13579.azurecr.io/imagename13579
     workflow_run:
       workflows: ["Docker Image CI" , "Terraform CICD"]
       types:
@@ -15,15 +10,26 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: development
     steps:
     - name: Azure Login
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    - name: Parse ACR credentials
+      id: acr
+      run: |
+          echo "username=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .username)" >> $GITHUB_OUTPUT
+          echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_OUTPUT
+          echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_OUTPUT
+
+    - name: Login to ACR
+      run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
+
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
         app-name: T-node-web-app
         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-        images: ${{ github.event.inputs.docker_image }}
+        images: imagename13579.azurecr.io/imagename13579:latest
