@@ -3,7 +3,15 @@ name: 'Terraform CICD'
 on:
   push:
     branches:
-      - main 
+      - main
+  inputs:
+    acr_name:
+      description: "ACR_name"
+      required: true 
+    acr_aku:
+       description: "ACR sku"
+       required: true
+
 
 permissions:
   contents: write
@@ -34,8 +42,8 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # - name: Install jq
-    #   run: sudo apt-get install jq
+    - name: Install jq
+      run: sudo apt-get install jq
 
 
     # Initialize Terraform
@@ -57,9 +65,9 @@ jobs:
           ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
       run: |
         mkdir -p artifacts 
-        terraform plan -out=artifacts/tfplan.out -input=false
-
-
+        terraform plan -out=artifacts/tfplan.out -input=false \
+          -var="acr_name={{ github.event.input.acr_name}}" \
+          -var="acr_aku={{ github.event.input.acr_aku}}" \
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
