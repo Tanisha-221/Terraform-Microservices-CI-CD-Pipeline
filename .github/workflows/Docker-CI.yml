@@ -7,6 +7,11 @@ on:
     types:
       - completed
 
+permissions:
+     contents: read
+     packages: write
+     id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -74,7 +79,7 @@ jobs:
           latest
           ${{ github.sha }}
           staging
-          
+
     - name: Login to Azure Container Registry
       run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
 
