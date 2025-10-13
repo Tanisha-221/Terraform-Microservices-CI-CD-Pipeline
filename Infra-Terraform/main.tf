@@ -40,9 +40,9 @@ resource "azurerm_web_app_active_slot" "example" {
 }
 
 module "acr" {
-    source = "./module/acr"
-    acr_resource_group_name = azurerm_resource_group.rg.name    
-    acr_name = var.acr_name
-    acr_location = azurerm_resource_group.rg.location
-    acr_admin_enabled = var.acr_admin_enabled
+  source                  = "./module/acr"
+  acr_resource_group_name = azurerm_resource_group.rg.name
+  acr_name                = var.acr_name
+  acr_location            = azurerm_resource_group.rg.location
+  acr_admin_enabled       = var.acr_admin_enabled
 }
