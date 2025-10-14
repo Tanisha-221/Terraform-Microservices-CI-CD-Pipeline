@@ -1,6 +1,7 @@
 variable "acr_resource_group_name" {
   description = "The name of the resource group where the ACR will be created."
   type        = string
+  default = "myacr13579"
   
 }
 
