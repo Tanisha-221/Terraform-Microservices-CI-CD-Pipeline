@@ -53,10 +53,8 @@ jobs:
           ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
       run: |
         mkdir -p artifacts 
-        terraform plan -out=artifacts/tfplan.out -input=false \
-          -var="acr_name=${ACR_NAME}" \
-          -var="acr_sku=${ACR_SKU}"
-
+        terraform plan -out=artifacts/tfplan.out -input=false 
+        
     - name: Check tfplan file 
       run: ls -l artifacts/tfplan.out || echo "Plan file not found"
 
