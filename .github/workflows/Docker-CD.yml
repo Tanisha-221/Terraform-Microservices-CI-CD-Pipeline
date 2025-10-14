@@ -24,6 +24,13 @@ jobs:
     #       echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_OUTPUT
     #       echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_OUTPUT
 
+
+    - name: Check ACR credentials
+      run: |
+        echo "ACR URL: ${{ secrets.ACR_CREDENTIALS }}"
+        echo "ACR Username: ${{ secrets.ACR_CREDENTIALS }}"
+        echo "Image Name: imagename13579.azurecr.io/imagename13579:latest"
+
     # - name: Login to ACR
     #   run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
 
