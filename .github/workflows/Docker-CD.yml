@@ -10,7 +10,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: development
+    environment: production 
     steps:
     - name: Azure Login
       uses: azure/login@v1
@@ -39,11 +39,13 @@ jobs:
         echo "${{ env.password }}" | docker login ${{ env.loginServer }} -u ${{ env.username }} --password-stdin
 
     - name: Deploy to Azure Web App
+      id: deploy-to-webapp
       uses: azure/webapps-deploy@v2
       with:
-        app-name: T-node-web-app
+        app-name: 'T-node-web-app'
+        slot-name: 'production'
         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-        images: ${{env.loginServer}}/my-nodejs-app:latest
+        images: ${{env.loginServer}}/my-nodejs-app:${{ github.sha }}
         
 
         #images: imagename13579.azurecr.io/imagename13579:latest
