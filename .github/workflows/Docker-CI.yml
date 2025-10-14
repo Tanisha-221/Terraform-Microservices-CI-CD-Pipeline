@@ -73,7 +73,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
-        images: ${{ steps.acr.outputs.loginServer }}/imagename13579
+        images: ${{ steps.acr.outputs.loginServer }}/my-nodejs-app
         tags: |
           latest
           ${{ github.sha }}
