@@ -2,14 +2,6 @@ name: 'Terraform CICD'
 
 on:
   workflow_dispatch:
-    inputs:
-      acr_name:
-        description: "ACR name"
-        required: true 
-      acr_sku:
-        description: "ACR SKU"
-        required: true
-
 
 permissions:
   contents: write
