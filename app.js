@@ -1,6 +1,20 @@
 const express = require('express');
+const path = require('path');
 const app = express();
-app.get('/', (req, res) => res.send('Hello Azure DevOps CI/CD!'));
-app.get('/health', (req, res) => res.sendStatus(200));
+
+// Serve static files from the current directory
+app.use(express.static(__dirname));
+
+// Basic route
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>Hello Azure DevOps CI/CD!</h1>
+    <img src="/newplot.png" alt="Sample Image">
+  `);
+});
+
+// Start server
 const port = process.env.PORT || 80;
-app.listen(port, () => console.log(`Server running on port ${port}`));
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
