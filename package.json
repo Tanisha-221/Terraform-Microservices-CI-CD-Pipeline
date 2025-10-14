@@ -8,8 +8,8 @@
     "build": "echo 'Building the app...'",
     "lint": "eslint .",
     "test": "vitest", 
-    "test:unit": "vitest tests/unit/**/*.test.js", 
-    "test:integration": "vitest tests/integration/**/*.test.js" 
+    "test:unit": "vitest tests/Unit/app.test.js tests/Unit/database.test.js", 
+    "test:integration": "vitest tests/Integration/app.test.js tests/Integration/utils.test.js" 
   },
   "keywords": [],
   "author": "",
