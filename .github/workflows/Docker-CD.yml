@@ -17,26 +17,32 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # - name: Parse ACR credentials
-    #   id: acr
-    #   run: |
-    #       echo "username=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .username)" >> $GITHUB_OUTPUT
-    #       echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_OUTPUT
-    #       echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_OUTPUT
-
-
-    - name: Check ACR credentials
+    - name: Parse ACR credentials
+      id: acr
       run: |
-        echo "ACR URL: ${{ secrets.ACR_CREDENTIALS }}"
-        echo "ACR Username: ${{ secrets.ACR_CREDENTIALS }}"
-        echo "Image Name: imagename13579.azurecr.io/imagename13579:latest"
+          echo "username=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .username)" >> $GITHUB_OUTPUT
+          echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_OUTPUT
+          echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_OUTPUT
+
+
+    # - name: Check ACR credentials
+    #   run: |
+    #     echo "ACR URL: ${{ secrets.ACR_CREDENTIALS }}"
+    #     echo "ACR Username: ${{ secrets.ACR_CREDENTIALS }}"
+    #     echo "Image Name: imagename13579.azurecr.io/imagename13579:latest"
 
     # - name: Login to ACR
     #   run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
+
+    - name: Login to ACR
+      run: echo "${{ env.password }}" | docker login ${{ env.loginServer }} -u ${{ env.username }} --password-stdin
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
         app-name: T-node-web-app
         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-        images: imagename13579.azurecr.io/imagename13579:latest
+        images: ${{env.loginServer}}/imagename13579:latest
+        
+
+        #images: imagename13579.azurecr.io/imagename13579:latest
