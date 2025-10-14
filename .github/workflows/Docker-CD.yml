@@ -1,16 +1,16 @@
 name: Docker Image CD
 
 on:
-    workflow_dispatch:
     workflow_run:
-      workflows: ["Docker Image CI" , "Terraform CICD"]
+      workflows: ["Docker Image CI"]
       types:
         - completed
-
+  
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: development
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     steps:
     - name: Azure Login
       uses: azure/login@v1
@@ -20,30 +20,21 @@ jobs:
     - name: Parse ACR credentials
       id: acr
       run: |
-        echo "username=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .username)" >> $GITHUB_ENV
-        echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_ENV
-        echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_ENV
-
-
-    # - name: Check ACR credentials
-    #   run: |
-    #     echo "ACR URL: ${{ secrets.ACR_CREDENTIALS }}"
-    #     echo "ACR Username: ${{ secrets.ACR_CREDENTIALS }}"
-    #     echo "Image Name: imagename13579.azurecr.io/imagename13579:latest"
-
-    # - name: Login to ACR
-    #   run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
+          echo "username=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .username)" >> $GITHUB_ENV
+          echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_ENV
+          echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_ENV
 
     - name: Login to ACR
       run: |
-        echo "${{ env.password }}" | docker login ${{ env.loginServer }} -u ${{ env.username }} --password-stdin
+          echo "${{ env.password }}" | docker login ${{ env.loginServer }} -u ${{ env.username }} --password-stdin
 
     - name: Deploy to Azure Web App
+      id: deploy-to-webapp
       uses: azure/webapps-deploy@v2
       with:
-        app-name: T-node-web-app
+        app-name: 'T-node-web-app'
+        slot-name: 'production'
         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-        images: ${{env.loginServer}}/my-nodejs-app:latest
-        
+        images: ${{env.loginServer}}/my-nodejs-app:${{ github.sha }}
 
-        #images: imagename13579.azurecr.io/imagename13579:latest
+    
