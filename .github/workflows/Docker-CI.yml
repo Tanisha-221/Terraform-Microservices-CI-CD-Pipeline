@@ -59,15 +59,15 @@ jobs:
     - name: Login to Azure Container Registry
       run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
 
+    - name: Install SonarQube Scanner
+      run: npm install -g sonar-scanner
+
     - name: Run SonarQube Scanner
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
-        /usr/bin/bash -echo
         sonar-scanner 
       continue-on-error: true
-    
-    
     
     - name: Extract Metadata (tags, labels) for Docker
       id: meta

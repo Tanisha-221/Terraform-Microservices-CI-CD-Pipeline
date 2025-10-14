@@ -1,5 +1,6 @@
 import request from 'supertest'; // for making requests to the app
-import app from '../../app'; // import your Express app
+import { describe, it, expect } from 'vitest'; // Ensure you import vitest's globals
+import app from '../app'; // import your Express app
 
 describe('App', () => {
   it('should return a 200 status for the /health route', async () => {
