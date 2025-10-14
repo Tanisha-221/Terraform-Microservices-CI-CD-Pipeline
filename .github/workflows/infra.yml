@@ -44,22 +44,6 @@ jobs:
     - name: Terraform Format
       run: terraform fmt -check
 
-    - name: Set ACR variables
-      run: |
-         if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-           echo "ACR_NAME=${{ github.event.inputs.acr_name }}" >> $GITHUB_ENV
-           echo "ACR_SKU=${{ github.event.inputs.acr_sku }}" >> $GITHUB_ENV
-         fi
-
-    - name: Debug ACR variables 
-      run : |
-         echo "ACR_NAME=${ACR_NAME}"
-         echo "ACR_SKU=${ACR_SKU}"
-         if [[ -z "${ACR_NAME}" || -z "${ACR_SKU}" ]]; then
-           echo "ACR variables are not set"
-           exit 1
-         fi
-
     # Run Terraform Plan
     - name: Terraform Plan
       env:
