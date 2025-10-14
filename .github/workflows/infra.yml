@@ -2,6 +2,9 @@ name: 'Terraform CICD'
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature 
 
 permissions:
   contents: write
@@ -54,7 +57,7 @@ jobs:
       run: |
         mkdir -p artifacts 
         terraform plan -out=artifacts/tfplan.out -input=false 
-        
+
     - name: Check tfplan file 
       run: ls -l artifacts/tfplan.out || echo "Plan file not found"
 
@@ -84,3 +87,36 @@ jobs:
           ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
           ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
       run: terraform apply -input=false artifacts/tfplan.out
+
+    - name: Get Terraform Output and save to file
+      run: terraform output -json > terraform-output.json
+
+    - name: Upload artifacts 
+      uses: actions/upload-artifact@v2
+      with:
+         name: terraform-output-file
+         path: terraform-output.json
+    
+    - name: Upload validated outputs.json
+      if: ${{ github.ref == 'refs/heads/feature' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: validated-terraform-outputs
+        path: ./Infra-Terraform/outputs.json
+
+    - name: Generate and validate Terraform outputs (JSON)
+      if: ${{ github.ref == 'refs/heads/feature' }}
+      run: |
+        echo "🔧 Generating outputs.json..."
+        terraform output -json > outputs.json
+
+        echo "📄 Verifying JSON format..."
+        jq empty outputs.json || { echo "❌ Generated file is not valid JSON!"; exit 1; }
+
+        echo "✅ Valid JSON generated"
+        echo "📄 File contents:"
+        cat outputs.json
+
+        echo "📊 File size:"
+        ls -lh outputs.json
+      working-directory: ./Infra-Terraform 

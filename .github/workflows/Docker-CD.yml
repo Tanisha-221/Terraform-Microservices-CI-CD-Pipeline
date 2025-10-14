@@ -36,5 +36,3 @@ jobs:
         slot-name: 'production'
         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
         images: ${{env.loginServer}}/my-nodejs-app:${{ github.sha }}
-
-    
