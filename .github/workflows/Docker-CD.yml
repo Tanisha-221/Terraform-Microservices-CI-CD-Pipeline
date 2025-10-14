@@ -17,15 +17,15 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Parse ACR credentials
-      id: acr
-      run: |
-          echo "username=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .username)" >> $GITHUB_OUTPUT
-          echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_OUTPUT
-          echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_OUTPUT
+    # - name: Parse ACR credentials
+    #   id: acr
+    #   run: |
+    #       echo "username=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .username)" >> $GITHUB_OUTPUT
+    #       echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_OUTPUT
+    #       echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_OUTPUT
 
-    - name: Login to ACR
-      run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
+    # - name: Login to ACR
+    #   run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
