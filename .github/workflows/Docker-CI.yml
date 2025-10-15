@@ -5,6 +5,8 @@ on:
       workflows: ["Terraform CICD"]
       types:
         - completed
+      branches:
+        - development 
 
 permissions:
      contents: read
