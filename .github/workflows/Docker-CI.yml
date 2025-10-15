@@ -23,7 +23,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-  
+    # Debug: List available artifacts to see if the terraform-plan artifact is available
+    - name: List available artifacts (debugging)
+      run: |
+        curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.events.workflow_run.id }}/artifacts"
+          
     - name: Download Terraform outputs
       uses: actions/download-artifact@v4
       with:
