@@ -26,7 +26,7 @@ jobs:
     - name: Download Terraform outputs
       uses: actions/download-artifact@v4
       with:
-         name: terraform-output-file
+         name: terraform-output
          path: ./terraform-outputs
 
     - name: Parse ACR values from Terraform output
@@ -109,11 +109,12 @@ jobs:
     - name: Run Trivy Scan
       uses: aquasecurity/trivy-action@v0.6.0
       with:
-        image: ${{ env.loginServer }}/my-nodejs-app:${{ github.sha }}
+        image: ${{ steps.tf.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
         format: 'table' # Change this to 'json' if you want to parse results later
         severity: 'HIGH,CRITICAL' # Fail if HIGH or CRITICAL vulnerabilities are found
         skip-update: false # Set this to true to skip the database update step (less secure)
         continue-on-error: true
+        
     - name: Build and push Docker image
       uses: docker/build-push-action@v4    
       with:

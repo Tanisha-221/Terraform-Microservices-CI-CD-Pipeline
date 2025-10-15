@@ -88,38 +88,40 @@ jobs:
           ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
       run: terraform apply -input=false artifacts/tfplan.out
 
-    - name: Get Terraform Output and save to file
-      run: terraform output -json > terraform-output.json
-
-    - name: Check if terraform-output.json exists
-      run: ls -lh terraform-output.json
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-         name: terraform-output-file
-         path: Infra-Terraform/terraform-output.json
-    
-    - name: Upload validated outputs.json
-      if: ${{ github.ref == 'refs/heads/feature' }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: validated-terraform-outputs
-        path: ./Infra-Terraform/outputs.json
-
-    - name: Generate and validate Terraform outputs (JSON)
+    # Generate and validate terraform-output.json
+    - name: Generate and validate Terraform output (JSON)
       if: ${{ github.ref == 'refs/heads/feature' }}
       run: |
-        echo "🔧 Generating outputs.json..."
-        terraform output -json > outputs.json
+        echo "🔧 Generating terraform-output.json..."
+        terraform output -json > terraform-output.json
 
-        echo "📄 Verifying JSON format..."
-        jq empty outputs.json || { echo "❌ Generated file is not valid JSON!"; exit 1; }
+        echo "📄 Verifying JSON format for terraform-output.json..."
+        jq empty terraform-output.json || { echo "❌ terraform-output.json is invalid JSON!"; exit 1; }
 
-        echo "✅ Valid JSON generated"
-        echo "📄 File contents:"
-        cat outputs.json
+        # Extract publish profile from terraform output JSON
+        echo "🔧 Extracting publish profile..."
+        jq '.app_service_publish_profile.value' terraform-output.json > publish-profile.json
 
-        echo "📊 File size:"
-        ls -lh outputs.json
-      working-directory: ./Infra-Terraform 
+        echo "📄 Verifying JSON format for publish-profile.json..."
+        jq empty publish-profile.json || { echo "❌ publish-profile.json is invalid JSON!"; exit 1; }
+
+        echo "✅ Valid JSON files generated"
+        echo "📄 terraform-output.json contents:"
+        cat terraform-output.json
+
+        echo "📄 publish-profile.json contents:"
+        cat publish-profile.json
+
+        echo "📊 File sizes:"
+        ls -lh terraform-output.json publish-profile.json
+      working-directory: ./Infra-Terraform
+
+    # Upload the validated output
+    - name: Upload validated terraform-output.json
+      if: ${{ github.ref == 'refs/heads/feature' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-output
+        path: |
+         Infra-Terraform/terraform-output.json
+         Infra-Terraform/publish-profile.json

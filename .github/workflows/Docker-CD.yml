@@ -17,16 +17,31 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Parse ACR credentials
+    - name: Download Terraform outputs artifact
+      uses: actions/download-artifact@v4
+      with:
+         name: terraform-output
+         path: ./terraform-outputs
+
+    - name: Parse ACR credentials from Terraform output
       id: acr
       run: |
-          echo "username=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .username)" >> $GITHUB_ENV
-          echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_ENV
-          echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_ENV
+        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' terraform-outputs/terraform-output.json)
+        ACR_USERNAME=$(jq -r '.acr_username.value' terraform-outputs/terraform-output.json)
+        ACR_PASSWORD=$(jq -r '.acr_password.value' terraform-outputs/terraform-output.json)
 
-    - name: Login to ACR
+        echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_ENV
+        echo "username=$ACR_USERNAME" >> $GITHUB_ENV
+        echo "password=$ACR_PASSWORD" >> $GITHUB_ENV
+
+    - name: Parse Publish Profile for Azure Web App deploy
+      id: publish-profile
       run: |
-          echo "${{ env.password }}" | docker login ${{ env.loginServer }} -u ${{ env.username }} --password-stdin
+        cat terraform-outputs/publish-profile.json > publish-profile.txt
+        echo "publish_profile=$(cat publish-profile.txt)" >> $GITHUB_OUTPUT
+
+    - name: Login to Azure Container Registry
+      run: echo "${{ env.password }}" | docker login ${{ env.loginServer }} -u ${{ env.username }} --password-stdin
 
     - name: Deploy to Azure Web App
       id: deploy-to-webapp
@@ -34,5 +49,5 @@ jobs:
       with:
         app-name: 'T-node-web-app'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+        publish-profile: ${{ steps.publish-profile.outputs.publish_profile }}
         images: ${{env.loginServer}}/my-nodejs-app:${{ github.sha }}
