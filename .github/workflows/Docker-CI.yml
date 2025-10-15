@@ -30,14 +30,14 @@ jobs:
       uses: actions/download-artifact@v4
       with:
          name: terraform-output
-         path: ./terraform-outputs
+         path: Infra-Terraform/terraform-output.json
 
     - name: Parse ACR values from Terraform output
       id: tf
       run: |
-        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' terraform-outputs/terraform-output.json)
-        ACR_USERNAME=$(jq -r '.acr_username.value' terraform-outputs/terraform-output.json)
-        ACR_PASSWORD=$(jq -r '.acr_password.value' terraform-outputs/terraform-output.json)
+        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' Infra-Terraform/terraform-output.json)
+        ACR_USERNAME=$(jq -r '.acr_username.value' Infra-Terraform/terraform-output.json)
+        ACR_PASSWORD=$(jq -r '.acr_password.value' Infra-Terraform/terraform-output.json)
 
         echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
         echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
