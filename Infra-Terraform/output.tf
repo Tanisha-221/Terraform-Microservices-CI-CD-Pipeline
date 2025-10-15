@@ -9,6 +9,6 @@ output "acr_resource_group_name" {
 }
 
 output "app_service_publish_profile" {
-  value = azurerm_app_service.my_app.publishing_profile
+  value     = azurerm_linux_web_app.awa.publishing_profile
   sensitive = true
 }
