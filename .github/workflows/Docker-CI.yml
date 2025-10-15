@@ -7,10 +7,10 @@ on:
       - completed
 
 permissions:
-     contents: read
-     packages: write
-     id-token: write
-     actions: read 
+  contents: read
+  packages: write
+  id-token: write
+  actions: read 
 
 jobs:
   build:
@@ -23,37 +23,28 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    # Debug: List available artifacts to see if the terraform-plan artifact is available
-    - name: List available artifacts (debugging)
-      run: |
-        curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.events.workflow_run.id }}/artifacts"
-          
     - name: Download Terraform outputs
       uses: actions/download-artifact@v4
       with:
-         name: terraform-plan  # The artifact name as uploaded in the first workflow
-         path: ./downloaded-artifacts  # The local path to store the artifact
+         name: terraform-output  # Name of the artifact uploaded in the Terraform pipeline
+         path: ./downloaded-artifacts  # Path to store the downloaded artifact
 
-
-    - name: List files in Infra-Terraform directory(degugging)
-      run: ls -R ./Infra-Terraform
+    - name: List files in downloaded artifacts directory (debugging)
+      run: ls -R ./downloaded-artifacts
 
     - name: Parse ACR values from Terraform output
       id: tf
       run: |
-
         # Ensure the file exists and is properly downloaded
-        if [[ ! -f ./Infra-Terraform/terraform-output.json ]]; then
+        if [[ ! -f ./downloaded-artifacts/terraform-output.json ]]; then
           echo "Terraform output file not found!"
           exit 1
         fi
 
         # Extract the ACR login server, username, and password from the downloaded JSON
-
-        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' Infra-Terraform/terraform-output.json)
-        ACR_USERNAME=$(jq -r '.acr_username.value' Infra-Terraform/terraform-output.json)
-        ACR_PASSWORD=$(jq -r '.acr_password.value' Infra-Terraform/terraform-output.json)
+        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' ./downloaded-artifacts/terraform-output.json)
+        ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/terraform-output.json)
+        ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/terraform-output.json)
 
         echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
         echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
