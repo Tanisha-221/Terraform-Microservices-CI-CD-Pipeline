@@ -23,11 +23,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Download Terraform outputs
-      uses: actions/download-artifact@v4
-      with:
-         name: terraform-output  # Name of the artifact uploaded in the Terraform pipeline
-         path: ./downloaded-artifacts  # Path to store the downloaded artifact
+    - name: Install jq
+      run: sudo apt-get install jq 
+      
+    - name: Download artifact using GitHub API
+      run: |
+          # Define the GitHub API URL
+          API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
+          
+          # Fetch artifact ID using GitHub API
+          artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
+
+          # Download the artifact
+          curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
+          
+          # Unzip the artifact
+          unzip terraform-output.zip -d ./downloaded-artifacts
 
     - name: List files in downloaded artifacts directory (debugging)
       run: ls -R ./downloaded-artifacts
