@@ -1,22 +1,58 @@
 name: Docker Image CI
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["Terraform CICD"]
+    types:
+      - completed
 
 permissions:
      contents: read
      packages: write
      id-token: write
+     actions: read 
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      loginServer: ${{ steps.tf.outputs.loginServer }}
+      username: ${{ steps.tf.outputs.username }}
+      password: ${{ steps.tf.outputs.password }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    
+  
+    - name: Download Terraform outputs
+      uses: actions/download-artifact@v4
+      with:
+         name: terraform-plan  # The artifact name as uploaded in the first workflow
+         path: ./downloaded-artifacts  # The local path to store the artifact
+
+
+    - name: List files in Infra-Terraform directory(degugging)
+      run: ls -R ./Infra-Terraform
+
+    - name: Parse ACR values from Terraform output
+      id: tf
+      run: |
+
+        # Ensure the file exists and is properly downloaded
+        if [[ ! -f ./Infra-Terraform/terraform-output.json ]]; then
+          echo "Terraform output file not found!"
+          exit 1
+        fi
+
+        # Extract the ACR login server, username, and password from the downloaded JSON
+
+        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' Infra-Terraform/terraform-output.json)
+        ACR_USERNAME=$(jq -r '.acr_username.value' Infra-Terraform/terraform-output.json)
+        ACR_PASSWORD=$(jq -r '.acr_password.value' Infra-Terraform/terraform-output.json)
+
+        echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+        echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+        echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
 
     - name: Setup Node.js environment
       uses: actions/setup-node@v3
@@ -46,18 +82,12 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
+
     - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v3
-      
-    - name: Parse ACR credentials
-      id: acr
-      run: |
-          echo "username=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .username)" >> $GITHUB_OUTPUT
-          echo "password=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .password)" >> $GITHUB_OUTPUT
-          echo "loginServer=$(echo '${{ secrets.ACR_CREDENTIALS }}' | jq -r .loginServer)" >> $GITHUB_OUTPUT
 
     - name: Login to Azure Container Registry
-      run: echo "${{ steps.acr.outputs.password }}" | docker login ${{ steps.acr.outputs.loginServer }} -u ${{ steps.acr.outputs.username }} --password-stdin
+      run: echo "${{ steps.tf.outputs.password }}" | docker login ${{ steps.tf.outputs.loginServer }} -u ${{ steps.tf.outputs.username }} --password-stdin
 
     - name: Install SonarQube Scanner
       run: npm install -g sonar-scanner
@@ -73,19 +103,47 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
-        images: ${{ steps.acr.outputs.loginServer }}/my-nodejs-app
+        images: ${{ steps.tf.outputs.loginServer }}/my-nodejs-app
         tags: |
           latest
           ${{ github.sha }}
 
-    - name: Build and push Docker image
+    - name: Build Docker image
       uses: docker/build-push-action@v4    
       with:
         context: .
         file: ./dockerfile
-        push: true
+        push: false 
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         build-args: |
           BUILDKIT_INLINE_CACHE=1
         log-level: debug
+
+    - name: Run Trivy Scan
+      uses: aquasecurity/trivy-action@0.28.0
+      with:
+        image: ${{ steps.tf.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
+        format: 'table' # Change this to 'json' if you want to parse results later
+        severity: 'HIGH,CRITICAL' # Fail if HIGH or CRITICAL vulnerabilities are found
+        skip-update: false # Set this to true to skip the database update step (less secure)
+        continue-on-error: true
+        
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4    
+      with:
+        context: .
+        file: ./dockerfile
+        push: true  
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+        log-level: debug
+
+    - name: Upload ACR credentials as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+         name: acr-credentials
+         path: |
+           Infra-Terraform/terraform-outputs/terraform-output.json
