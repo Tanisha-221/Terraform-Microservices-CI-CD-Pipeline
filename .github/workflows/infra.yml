@@ -93,23 +93,24 @@ jobs:
         --name T-node-web-app \
         --resource-group T-microservices-project \
         --query "[0].publishProfile" \
-        --output tsv > publish-profile.xml
+        --output json > publish-profile.json
       env:
         AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
         AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-    - name: Validate publish-profile.xml
-      run: |
-        echo "📄 Verifying XML format for publish-profile.xml..."
-        xmllint --noout publish-profile.xml || { echo "❌ publish-profile.xml is invalid XML!"; exit 1; }
 
-    # Upload the validated publish-profile.xml
-    - name: Upload validated publish-profile.xml
+    - name: Validate publish-profile.json
+      run: |
+        echo "📄 Verifying JSON format for publish-profile.json..."
+        jq empty publish-profile.json || { echo "❌ publish-profile.json is invalid JSON!"; exit 1; }
+
+    # Upload the validated publish-profile.json 
+    - name: Upload validated publish-profile.json
       uses: actions/upload-artifact@v4
       with:
         name: publish-profile
-        path: ./publish-profile.xml
+        path: ./publish-profile.json
 
     # Generate and validate terraform-output.json
     - name: Generate and validate Terraform output (JSON)
