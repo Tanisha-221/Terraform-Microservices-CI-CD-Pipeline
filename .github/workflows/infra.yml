@@ -87,10 +87,22 @@ jobs:
           ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
           ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
       run: terraform apply -input=false artifacts/tfplan.out
+    - name: Fetch publish profile using Azure CLI
+      run: |
+        az webapp deployment list-publishing-profiles \
+        --name T-node-web-app \
+        --resource-group T-microservices-project \
+        --query "[0].publishProfile" \
+        --output tsv > publish-profile.xml
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
     # Generate and validate terraform-output.json
     - name: Generate and validate Terraform output (JSON)
-      if: ${{ github.ref == 'refs/heads/feature' }}
+      if: ${{ github.ref == 'refs/heads/development' }}
       run: |
         echo "🔧 Generating terraform-output.json..."
         terraform output -json > terraform-output.json
@@ -99,8 +111,8 @@ jobs:
         jq empty terraform-output.json || { echo "❌ terraform-output.json is invalid JSON!"; exit 1; }
 
         # Extract publish profile from terraform output JSON
-        echo "🔧 Extracting publish profile..."
-        jq '.app_service_publish_profile.value' terraform-output.json > publish-profile.json
+        # echo "🔧 Extracting publish profile..."
+        # jq '.app_service_publish_profile.value' terraform-output.json > publish-profile.json
 
         echo "📄 Verifying JSON format for publish-profile.json..."
         jq empty publish-profile.json || { echo "❌ publish-profile.json is invalid JSON!"; exit 1; }
@@ -118,7 +130,7 @@ jobs:
 
     # Upload the validated output
     - name: Upload validated terraform-output.json
-      if: ${{ github.ref == 'refs/heads/feature' }}
+      if: ${{ github.ref == 'refs/heads/development' }}
       uses: actions/upload-artifact@v4
       with:
         name: terraform-output
