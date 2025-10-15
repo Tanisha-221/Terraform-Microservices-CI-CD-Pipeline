@@ -99,6 +99,17 @@ jobs:
         AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
         AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    - name: Validate publish-profile.xml
+      run: |
+        echo "📄 Verifying XML format for publish-profile.xml..."
+        xmllint --noout publish-profile.xml || { echo "❌ publish-profile.xml is invalid XML!"; exit 1; }
+
+    # Upload the validated publish-profile.xml
+    - name: Upload validated publish-profile.xml
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish-profile
+        path: ./publish-profile.xml
 
     # Generate and validate terraform-output.json
     - name: Generate and validate Terraform output (JSON)
@@ -136,4 +147,3 @@ jobs:
         name: terraform-output
         path: |
          Infra-Terraform/terraform-output.json
-         Infra-Terraform/publish-profile.json
