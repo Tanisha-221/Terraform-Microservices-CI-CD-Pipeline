@@ -110,7 +110,7 @@ jobs:
         log-level: debug
 
     - name: Run Trivy Scan
-      uses: aquasecurity/trivy-action@latest
+      uses: aquasecurity/trivy-action@0.28.0
       with:
         image: ${{ steps.tf.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
         format: 'table' # Change this to 'json' if you want to parse results later
