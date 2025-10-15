@@ -21,5 +21,5 @@ output "acr_username" {
 output "acr_password" {
   description = "The admin password for the ACR"
   value       = module.acr.password
-  sensitive = true
+  sensitive   = true
 }
