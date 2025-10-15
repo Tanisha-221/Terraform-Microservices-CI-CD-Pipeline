@@ -5,10 +5,7 @@ on:
       workflows: ["Terraform CICD"]
       types:
         - completed
-  push:
-    branches:
-        - development 
-
+        
 permissions:
      contents: read
      packages: write
@@ -27,10 +24,14 @@ jobs:
     
   
     - name: Download Terraform outputs
-      uses: actions/download-artifact@v4
+      uses: dawidd6/action-download-artifacts@v3
       with:
-         name: terraform-output
-         path: ./Infra-Terraform
+         workflow: infra.yml
+         name: terraform CICD
+         path: ./Infra-Terraform/terraform-output.json
+         run_id: ${{ github.events.workflow_run.id }}
+         
+
     
     - name: List files in Infra-Terraform directory(degugging)
       run: ls -R ./Infra-Terraform
