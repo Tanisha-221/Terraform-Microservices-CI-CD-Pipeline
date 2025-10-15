@@ -2,13 +2,10 @@ name: Docker Image CI
 
 on:
   workflow_run:
-      workflows: ["Terraform CICD"]
-      types:
-        - completed
+    workflows: ["Terraform CICD"]
+    types:
+      - completed
 
-  push: 
-     branches:
-      - development
 permissions:
      contents: read
      packages: write
@@ -30,11 +27,9 @@ jobs:
     - name: Download Terraform outputs
       uses: actions/download-artifact@v4
       with:
-         workflow: infra.yml
-         name: terraform CICD
-         path: ./Infra-Terraform
-         run_id: ${{ github.events.workflow_run.id }}
-         github_token: ${{ secrets.GITHUB_TOKEN }}
+         name: terraform-plan  # The artifact name as uploaded in the first workflow
+         path: ./downloaded-artifacts  # The local path to store the artifact
+
 
     - name: List files in Infra-Terraform directory(degugging)
       run: ls -R ./Infra-Terraform
