@@ -60,14 +60,20 @@ jobs:
           echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
           echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
           echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+          
+    - name: List files in downloaded artifacts directory (debugging)
+      run: ls -R ./downloaded-artifacts
 
       # Step 4: Docker Login to Azure Container Registry
     - name: Docker Login to Azure Container Registry
       run: |
-          echo "${{ steps.deploy.outputs.password }}" | docker login ${{ steps.deploy.outputs.loginServer }} -u ${{ steps.deploy.outputs.username }} --password-stdin
+        echo ${{ steps.deploy.outputs.password }} | docker login ${{ steps.deploy.outputs.loginServer }} -u ${{ steps.deploy.outputs.username }} --password-stdin
+      env:
+        ACR_USERNAME: ${{ steps.deploy.outputs.username }}
+        ACR_PASSWORD: ${{ steps.deploy.outputs.password }}
+        ACR_LOGIN_SERVER: ${{ steps.deploy.outputs.loginServer }}
 
       # Optional Docker Build steps can be added here, e.g., to build and push Docker images.
-
     - name: Validate publish-profile.json
       run: |
         echo "📄 Verifying JSON format for publish-profile.json..."
@@ -89,4 +95,4 @@ jobs:
         app-name: 'T-node-web-app'
         slot-name: 'production'
         publish-profile: ${{ env.publish_profile }}  # Use the extracted publish profile here
-        images: ${{ needs.ci.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
+        images: ${{ steps.deploy.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
