@@ -1,9 +1,11 @@
 name: Docker Image CD
 
 on:
-  push:
-      branches: 
-         - development
+   workflow_run:
+    workflows: ["Docker Image CI"]
+    types:
+      - completed
+       
   
 jobs:
   deploy:
