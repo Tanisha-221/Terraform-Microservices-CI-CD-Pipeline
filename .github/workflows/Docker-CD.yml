@@ -15,17 +15,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     outputs:
-      loginServer: ${{ steps.tf.outputs.loginServer }}
-      username: ${{ steps.tf.outputs.username }}
-      password: ${{ steps.tf.outputs.password }}
+      loginServer: ${{ steps.deploy.outputs.loginServer }}
+      username: ${{ steps.deploy.outputs.username }}
+      password: ${{ steps.deploy.outputs.password }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Download ACR Credentials artifact using GitHub API
       run: |
@@ -68,12 +63,16 @@ jobs:
       run: |
          cat ./downloaded-artifacts/acr-credentials.json
 
-
     - name: List files in downloaded artifacts directory (debugging)
       run: ls -R ./downloaded-artifacts
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Login to Azure Container Registry
-      run: echo "${{ steps.tf.outputs.password }}" | docker login ${{ steps.tf.outputs.loginServer }} -u ${{ steps.tf.outputs.username }} --password-stdin
+      run: echo "${{ steps.deploy.outputs.password }}" | docker login ${{ steps.deploy.outputs.loginServer }} -u ${{ steps.deploy.outputs.username }} --password-stdin
 
     - name: Fetch publish profile using Azure CLI
       run: |
