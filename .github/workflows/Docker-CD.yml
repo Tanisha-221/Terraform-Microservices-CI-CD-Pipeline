@@ -1,10 +1,9 @@
 name: Docker Image CD
 
 on:
-  workflow_run:
-    workflows: ["Docker Image CI"]
-    types:
-      - completed
+  push:
+      branches: 
+         - development
   
 jobs:
   deploy:
@@ -17,25 +16,35 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Download artifact using GitHub API
-      run: |
+    # - name: Download artifact using GitHub API
+    #   run: |
         # Define the GitHub API URL
-        API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
-        
-        # Fetch artifact ID using GitHub API
-        artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
-        
-        # Download the artifact
-        curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
-        
-        # List the files in the downloaded zip before extracting
-        unzip -l terraform-output.zip  # This will list the contents of the zip file
-        
-        # Unzip the artifact
-        unzip terraform-output.zip -d ./downloaded-artifacts
+    #    API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
+    
+    #    # Fetch artifact ID using GitHub API
+    #    artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
+    
+     #   # Download the artifact
+      #  curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
+    
+    #    # Verify the downloaded file size
+    #    FILE_SIZE=$(stat --format=%s terraform-output.zip)
+    #    if [ $FILE_SIZE -lt 100 ]; then
+    #       echo "Downloaded file is empty or corrupted!"
+    #      exit 1
+    #    else
+    #       echo "File size looks good: $FILE_SIZE bytes."
+    #    fi
 
-        # Verify contents of the artifact
-        ls -lh ./downloaded-artifacts
+    #    # List the contents of the ZIP file to check if it's a valid ZIP
+     #   unzip -l terraform-output.zip || { echo "Failed to list contents, this is not a valid zip file."; exit 1; }
+    
+        # Unzip the artifact
+    #    unzip terraform-output.zip -d ./downloaded-artifacts
+
+     #   # Verify contents of the artifact
+    #    ls -lh ./downloaded-artifacts
+
 
     - name: Fetch publish profile using Azure CLI
       run: |
