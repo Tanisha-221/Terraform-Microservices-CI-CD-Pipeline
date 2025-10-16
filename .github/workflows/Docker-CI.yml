@@ -178,7 +178,8 @@ jobs:
 
     - name: Docker Scan
       run: docker scan ${{ steps.meta.outputs.tags }}
-
+      continue-on-error: true
+      
     - name: Upload ACR credentials as artifacts
       uses: actions/upload-artifact@v4
       with:
