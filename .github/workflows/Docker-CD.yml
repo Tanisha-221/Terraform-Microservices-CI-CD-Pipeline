@@ -72,7 +72,7 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Login to Azure Container Registry
-      run: echo "${{ steps.deploy.outputs.password }}" | docker login ${{ steps.deploy.outputs.loginServer }} -u ${{ steps.deploy.outputs.username }} --password-stdin
+      run: echo "${{ steps.deploy.outputs.password }}" | docker login --username "${{ steps.deploy.outputs.username }}" --password-stdin "${{ steps.deploy.outputs.loginServer }}"
 
     - name: Fetch publish profile using Azure CLI
       run: |
