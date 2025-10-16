@@ -21,7 +21,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-  
+
     - name: Azure Login
       uses: azure/login@v1
       with:
@@ -37,58 +37,44 @@ jobs:
     
          # Fetch artifact ID using GitHub API
          artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
-    
-         # Download the artifact
-         curl -L -o artifacts.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
-    
-         # List the files in the downloaded zip before extracting
-         unzip -l artifacts.zip  # This will list the contents of the zip file
-    
-         # Unzip the artifact
-         unzip artifacts.zip -d ./downloaded-artifacts
+         
+         # Download the artifact (acr-credentials.zip)
+         curl -L -o acr-credentials.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
 
-         # Verify contents of the artifact
+         # List the files in the downloaded zip before extracting
+         unzip -l acr-credentials.zip  # This will list the contents of the zip file
+
+         # Unzip the artifact into the ./downloaded-artifacts directory
+         unzip acr-credentials.zip -d ./downloaded-artifacts
+
+         # Verify the contents of the artifact
          ls -lh ./downloaded-artifacts
 
-    - name: Verify combined_artifacts.zip exists
+    - name: Verify terraform-output.json exists
       run: |
-        # check if the artifacts.zip file exists before unzipping
-        if [ ! -f ./downloaded-artifacts/artifacts.zip ]; then
-          echo "🤷‍♀️ artifacts.zip not found!"
+        # Check if terraform-output.json exists after unzipping
+        if [ ! -f ./downloaded-artifacts/terraform-output.json ]; then
+          echo "🤷‍♀️ terraform-output.json not found!"
           exit 1
         else
-          echo "😁 artifacts.zip found!"
+          echo "😁 terraform-output.json found!"
         fi
 
-    - name: Unzip combined artifacts 
-      run: |
-        unzip ./downloaded-artifacts/artifacts.zip -d ./downloaded-artifacts
-
-    - name: Verify contents of download artifacts
-      run: |
-        ls -lh ./downloaded-artifacts
-
-    - name: List files in downloaded artifacts directory (debugging)
-      run: ls -R ./downloaded-artifacts
-
-    - name: Parse and use the downloaded Terraform output and Publish Profile
-      run: |
-         cat ./downloaded-artifacts/artifacts/terraform-output.json
-         
     - name: Parse ACR values from Terraform output
       id: tf
       run: |
-        # Ensure the file exists and is properly downloaded
-        if [[ ! -f ./downloaded-artifacts/artifacts/terraform-output.json ]]; then
+        # Ensure the terraform-output.json file exists
+        if [[ ! -f ./downloaded-artifacts/terraform-output.json ]]; then
           echo "Terraform output file not found!"
           exit 1
         fi
 
-        # Extract the ACR login server, username, and password from the downloaded JSON
-        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' ./downloaded-artifacts/artifacts/terraform-output.json)
-        ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/artifacts/terraform-output.json)
-        ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/artifacts/terraform-output.json)
+        # Extract the ACR login server, username, and password from the terraform output JSON
+        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' ./downloaded-artifacts/terraform-output.json)
+        ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/terraform-output.json)
+        ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/terraform-output.json)
 
+        # Set the extracted values as outputs
         echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
         echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
         echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
