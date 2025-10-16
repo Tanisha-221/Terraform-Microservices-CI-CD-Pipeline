@@ -99,11 +99,11 @@ jobs:
 
     # Upload ACR credentials as an artifact
     - name: Upload ACR Credentials as Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: acr-credentials
         path: acr-credentials.json
-        
+
     - name: Setup Node.js environment
       uses: actions/setup-node@v3
       with:
