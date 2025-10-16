@@ -9,10 +9,11 @@
     "plugin:node/recommended"
   ],
   "parserOptions": {
-    "ecmaVersion": 12
+    "ecmaVersion": 12,
+    "sourceType": "module"
   },
   "rules": {
-    "no-console": "warn",
-    "no-unused-vars": "warn"
+    "no-console": "warn",  // Change to "off" to disable the console warning
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]  // Allow unused function arguments with leading _
   }
 }

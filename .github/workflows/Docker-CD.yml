@@ -6,6 +6,10 @@ on:
     types:
       - completed
        
+permissions:
+  contents: read  # for reading repository contents
+  actions: read   # for reading workflow runs and artifacts
+  id-token: write  # for allowing access to OpenID Connect if needed
   
 jobs:
   deploy:
@@ -19,55 +23,43 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Install jq
-      run: sudo apt-get install jq 
-      
     - name: Azure Login
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Download artifact using GitHub API
+    - name: Install jq
+      run: sudo apt-get install jq 
+
+    - name: Set up environment variables
       run: |
-         # Define the GitHub API URL
-         API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
-    
-         # Fetch artifact ID using GitHub API
-         artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
-    
-         # Download the artifact
-         curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
-    
-         # List the files in the downloaded zip before extracting
-         unzip -l terraform-output.zip  # This will list the contents of the zip file
-    
-         # Unzip the artifact
-         unzip terraform-output.zip -d ./downloaded-artifacts
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          export REPO_OWNER=Tanisha-221
+          export REPO_NAME=Terraform-Microservices-CI-CD-Pipeline
+          export WORKFLOW_RUN_ID=${{ github.event.workflow_run.id }}
 
-         # Verify contents of the artifact
-         ls -lh ./downloaded-artifacts
+    - name: Debug Workflow Run ID
+      run: echo "Workflow Run ID: $WORKFLOW_RUN_ID"
 
-    - name: Verify combined_artifacts.zip exists
+    - name: List artifacts (get artifact ID)
       run: |
-        # check if the combined_artifacts.zip file exists before unzipping
-        if [ ! -f ./downloaded-artifacts/combined_artifacts.zip ]; then
-          echo "🤷‍♀️ combined_artifacts.zip not found!"
-          exit 1
-        else
-          echo "😁 combined_artifacts.zip found!"
-        fi
+          ARTIFACT_ID=$(curl -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/runs/$WORKFLOW_RUN_ID/artifacts | \
+            jq -r '.artifacts[0].id')
+          echo "Artifact ID: $ARTIFACT_ID"
+          echo "ARTIFACT_ID=$ARTIFACT_ID" >> $GITHUB_ENV
 
-    - name: Unzip combined artifacts 
+    - name: Download artifact
       run: |
-        unzip ./downloaded-artifacts/combined_artifacts.zip -d ./downloaded-artifacts
+          curl -L -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/artifacts/$ARTIFACT_ID/zip \
+            -o terraform-output.zip
 
-    - name: Verify contents of download artifacts
+    - name: Unzip the artifact
       run: |
-        ls -lh ./downloaded-artifacts
+          unzip terraform-output.zip -d ./downloaded-artifacts
+          ls -lh ./downloaded-artifacts
 
-    - name: List files in downloaded artifacts directory (debugging)
-      run: ls -R ./downloaded-artifacts
-    
     - name: Parse ACR values from Terraform output
       id: tf
       run: |

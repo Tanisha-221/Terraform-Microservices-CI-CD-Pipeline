@@ -26,27 +26,6 @@ jobs:
     - name: Install jq
       run: sudo apt-get install jq 
 
-    # - name: Download artifact using GitHub API
-    #  run: |
-    #      # Define the GitHub API URL
-    #      API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
-    #      
-    #       # Fetch artifact ID using GitHub API
-    #      artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
-    #
-    #      # Download the artifact
-    #      curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
-     #     
-    #      ls -l ./downloaded-artifacts
-#
-    #      # List the files in the zip before extracting
-    #      unzip -l terraform-output.zip  # This will list the contents of the zip file
-#
-     #     # Unzip the artifact
-      #    unzip terraform-output.zip -d ./downloaded-artifacts
-
-      #    cat ./downloaded-artifacts/terraform-output.json
-
     - name: Download artifact using GitHub API
       run: |
          # Define the GitHub API URL
@@ -179,10 +158,16 @@ jobs:
     - name: Docker Scan
       run: docker scan ${{ steps.meta.outputs.tags }}
       continue-on-error: true
-      
+
     - name: Upload ACR credentials as artifacts
       uses: actions/upload-artifact@v4
       with:
          name: acr-credentials
          path: |
            Infra-Terraform/terraform-outputs/terraform-output.json
+
+    - name: Upload Terraform Output artifact
+      uses: actions/upload-artifact@v3
+      with:
+         name: terraform-output
+         path: ./downloaded-artifacts/combined_artifacts/terraform-output.json

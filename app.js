@@ -1,3 +1,4 @@
+// app.js
 const express = require('express');
 const path = require('path');
 const app = express();
@@ -14,8 +15,13 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Start server
-const port = process.env.PORT || 80;
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+// Export the app for use in other modules
+module.exports = app;
+
+// Start server only if not in a test environment
+if (process.env.NODE_ENV !== 'test') {
+  const port = process.env.PORT || 80;
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
