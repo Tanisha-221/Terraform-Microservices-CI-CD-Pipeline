@@ -11,42 +11,83 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
+    outputs: 
+      loginServer: ${{ steps.tf.outputs.loginServer }}
+      username: ${{ steps.tf.outputs.username }}
+      password: ${{ steps.tf.outputs.password }}
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install jq
+      run: sudo apt-get install jq 
+      
     - name: Azure Login
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # - name: Download artifact using GitHub API
-    #   run: |
-        # Define the GitHub API URL
-    #    API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
+    - name: Download artifact using GitHub API
+      run: |
+         # Define the GitHub API URL
+         API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
     
-    #    # Fetch artifact ID using GitHub API
-    #    artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
+         # Fetch artifact ID using GitHub API
+         artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
     
-     #   # Download the artifact
-      #  curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
+         # Download the artifact
+         curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
     
-    #    # Verify the downloaded file size
-    #    FILE_SIZE=$(stat --format=%s terraform-output.zip)
-    #    if [ $FILE_SIZE -lt 100 ]; then
-    #       echo "Downloaded file is empty or corrupted!"
-    #      exit 1
-    #    else
-    #       echo "File size looks good: $FILE_SIZE bytes."
-    #    fi
+         # List the files in the downloaded zip before extracting
+         unzip -l terraform-output.zip  # This will list the contents of the zip file
+    
+         # Unzip the artifact
+         unzip terraform-output.zip -d ./downloaded-artifacts
 
-    #    # List the contents of the ZIP file to check if it's a valid ZIP
-     #   unzip -l terraform-output.zip || { echo "Failed to list contents, this is not a valid zip file."; exit 1; }
+         # Verify contents of the artifact
+         ls -lh ./downloaded-artifacts
+
+    - name: Verify combined_artifacts.zip exists
+      run: |
+        # check if the combined_artifacts.zip file exists before unzipping
+        if [ ! -f ./downloaded-artifacts/combined_artifacts.zip ]; then
+          echo "🤷‍♀️ combined_artifacts.zip not found!"
+          exit 1
+        else
+          echo "😁 combined_artifacts.zip found!"
+        fi
+
+    - name: Unzip combined artifacts 
+      run: |
+        unzip ./downloaded-artifacts/combined_artifacts.zip -d ./downloaded-artifacts
+
+    - name: Verify contents of download artifacts
+      run: |
+        ls -lh ./downloaded-artifacts
+
+    - name: List files in downloaded artifacts directory (debugging)
+      run: ls -R ./downloaded-artifacts
     
-        # Unzip the artifact
-    #    unzip terraform-output.zip -d ./downloaded-artifacts
+    - name: Parse ACR values from Terraform output
+      id: tf
+      run: |
+        # Ensure the file exists and is properly downloaded
+        if [[ ! -f ./downloaded-artifacts/combined_artifacts/terraform-output.json ]]; then
+          echo "Terraform output file not found!"
+          exit 1
+        fi
 
-     #   # Verify contents of the artifact
-    #    ls -lh ./downloaded-artifacts
+        # Extract the ACR login server, username, and password from the downloaded JSON
+        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
+        ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
+        ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
 
+        echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+        echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+        echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
+    - name: Login to Azure Container Registry
+      run: echo "${{ steps.tf.outputs.password }}" | docker login ${{ steps.tf.outputs.loginServer }} -u ${{ steps.tf.outputs.username }} --password-stdin
 
     - name: Fetch publish profile using Azure CLI
       run: |
@@ -88,4 +129,4 @@ jobs:
         app-name: 'T-node-web-app'
         slot-name: 'production'
         publish-profile: ${{ env.publish_profile }}  # Use the extracted publish profile here
-        images: ${{ secrets.ACR_LOGIN_SERVER }}/my-nodejs-app:${{ github.sha }}
+        images: ${{ steps.tf.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
