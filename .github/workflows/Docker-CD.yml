@@ -1,5 +1,7 @@
 name: Docker Image CD
 
+name: Docker Image CD
+
 on:
    workflow_run:
     workflows: ["Docker Image CI"]
@@ -15,6 +17,123 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs: 
+      loginServer: ${{ steps.tf.outputs.loginServer }}
+      username: ${{ steps.tf.outputs.username }}
+      password: ${{ steps.tf.outputs.password }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Install jq
+      run: sudo apt-get install jq 
+
+    - name: Set up environment variables
+      run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          export REPO_OWNER=Tanisha-221
+          export REPO_NAME=Terraform-Microservices-CI-CD-Pipeline
+          export WORKFLOW_RUN_ID=${{ github.event.workflow_run.id }}
+
+    - name: Debug Workflow Run ID
+      run: echo "Workflow Run ID: $WORKFLOW_RUN_ID"
+
+    - name: List artifacts (get artifact ID)
+      run: |
+          ARTIFACT_ID=$(curl -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/runs/$WORKFLOW_RUN_ID/artifacts | \
+            jq -r '.artifacts[0].id')
+          echo "Artifact ID: $ARTIFACT_ID"
+          echo "ARTIFACT_ID=$ARTIFACT_ID" >> $GITHUB_ENV
+
+    - name: Download artifact
+      run: |
+          curl -L -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/artifacts/$ARTIFACT_ID/zip \
+            -o terraform-output.zip
+
+    - name: Unzip the artifact
+      run: |
+          unzip terraform-output.zip -d ./downloaded-artifacts
+          ls -lh ./downloaded-artifacts
+
+    - name: Parse ACR values from Terraform output
+      id: tf
+      run: |
+        # Ensure the file exists and is properly downloaded
+        if [[ ! -f ./downloaded-artifacts/combined_artifacts/terraform-output.json ]]; then
+          echo "Terraform output file not found!"
+          exit 1
+        fi
+
+        # Extract the ACR login server, username, and password from the downloaded JSON
+        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
+        ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
+        ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
+
+        echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+        echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+        echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
+    - name: Login to Azure Container Registry
+      run: echo "${{ steps.tf.outputs.password }}" | docker login ${{ steps.tf.outputs.loginServer }} -u ${{ steps.tf.outputs.username }} --password-stdin
+
+    - name: Fetch publish profile using Azure CLI
+      run: |
+        echo "Fetching publish profile from Azure..."
+        az webapp deployment list-publishing-profiles \
+          --name T-node-web-app \
+          --resource-group T-microservices-project \
+          --query "[0].publishProfile" \
+          --output json > publish-profile.json
+
+        # Verify the downloaded publish profile
+        ls -lh publish-profile.json
+        cat publish-profile.json
+  
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+    - name: Validate publish-profile.json
+      run: |
+        echo "📄 Verifying JSON format for publish-profile.json..."
+        jq empty publish-profile.json || { echo "❌ publish-profile.json is invalid JSON!"; exit 1; }
+
+    - name: Extract publish profile details
+      run: |
+        echo "📄 Extracting publish profile details..."
+        # Extract the publish profile value
+        PUBLISH_PROFILE=$(jq -r '.[0].publishProfile' publish-profile.json)
+
+        # Set the publish profile as an environment variable
+        echo "publish_profile=$PUBLISH_PROFILE" >> $GITHUB_ENV
+
+    - name: Deploy to Azure Web App
+      id: deploy-to-webapp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'T-node-web-app'
+        slot-name: 'production'
+        publish-profile: ${{ env.publish_profile }}  # Use the extracted publish profile here
+        images: ${{ steps.tf.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
+
+       
+permissions:
+  contents: read  # for reading repository contents
+  actions: read   # for reading workflow runs and artifacts
+  id-token: write  # for allowing access to OpenID Connect if needed
+  
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
     outputs: 
       loginServer: ${{ steps.tf.outputs.loginServer }}
       username: ${{ steps.tf.outputs.username }}
