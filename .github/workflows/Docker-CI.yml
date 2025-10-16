@@ -159,12 +159,6 @@ jobs:
       run: docker scan ${{ steps.meta.outputs.tags }}
       continue-on-error: true
 
-    - name: Download ACR credentials
-      uses: actions/download-artifact@v4
-      with:
-        name: acr-credentials
-        path: ./downloaded-artifacts
-
     - name: Parse ACR values from Terraform output
       id: tf
       run: |
