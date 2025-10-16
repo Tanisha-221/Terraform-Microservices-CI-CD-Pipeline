@@ -8,8 +8,6 @@ on:
        
 permissions:
   contents: read  # for reading repository contents
-  actions: read   # for reading workflow runs and artifacts
-  id-token: write  # for allowing access to OpenID Connect if needed
   
 jobs:
   deploy:
