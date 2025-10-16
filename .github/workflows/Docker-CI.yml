@@ -25,7 +25,7 @@ jobs:
     
     - name: Install jq
       run: sudo apt-get install jq 
-      
+
     - name: Download artifact using GitHub API
       run: |
           # Define the GitHub API URL
@@ -37,8 +37,15 @@ jobs:
           # Download the artifact
           curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
           
+          ls -l ./downloaded-artifacts
+
+          # List the files in the zip before extracting
+          unzip -l terraform-output.zip  # This will list the contents of the zip file
+
           # Unzip the artifact
           unzip terraform-output.zip -d ./downloaded-artifacts
+
+          cat ./downloaded-artifacts/terraform-output.json
 
     - name: List files in downloaded artifacts directory (debugging)
       run: ls -R ./downloaded-artifacts
