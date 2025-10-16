@@ -37,57 +37,6 @@ jobs:
           export REPO_NAME=Terraform-Microservices-CI-CD-Pipeline
           export WORKFLOW_RUN_ID=${{ github.event.workflow_run.id }}
 
-    - name: Fetch artifact ID dynamically
-      run: |
-        # Define the GitHub API URL to get the list of artifacts
-        API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
-    
-        # Fetch artifact ID using GitHub API
-        artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
-    
-        # Print the artifact ID for debugging purposes
-        echo "Artifact ID: $artifact_id"
-    
-        # Set the artifact ID in GitHub environment variables
-        echo "ARTIFACT_ID=$artifact_id" >> $GITHUB_ENV
-
-    - name: Download artifact (Terraform output)
-      run: |
-        # Define the download URL for the artifact (no .zip since it's a .json file)
-        ARTIFACT_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$ARTIFACT_ID/contents/terraform-output.json"
-    
-        # Download the artifact (this is a JSON file, not a ZIP)
-        curl -L -o terraform-output.json -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $ARTIFACT_URL
-    
-        # List the contents of the downloaded file
-        ls -lh terraform-output.json
-
-    - name: Parse and use the downloaded Terraform output
-      run: |
-        # Ensure the terraform-output.json exists in the downloaded artifact
-        if [[ ! -f terraform-output.json ]]; then
-          echo "Terraform output file not found!"
-          exit 1
-        fi
-
-        # Parse values from terraform-output.json
-        cat terraform-output.json
-
-        # Parse ACR values from Terraform output
-        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' terraform-output.json)
-        ACR_USERNAME=$(jq -r '.acr_username.value' terraform-output.json)
-        ACR_PASSWORD=$(jq -r '.acr_password.value' terraform-output.json)
-
-        # Export parsed values as outputs
-        echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-        echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
-        echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
-
-    - name: Login to Azure Container Registry
-      run: |
-        echo "${{ steps.deploy.outputs.password }}" | docker login ${{ steps.deploy.outputs.loginServer }} -u ${{ steps.deploy.outputs.username }} --password-stdin
-
-
     - name: Fetch publish profile using Azure CLI
       run: |
         echo "Fetching publish profile from Azure..."
@@ -128,4 +77,4 @@ jobs:
         app-name: 'T-node-web-app'
         slot-name: 'production'
         publish-profile: ${{ env.publish_profile }}  # Use the extracted publish profile here
-        images: ${{ steps.deploy.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
+        images: ${{ myacrdockerregistry123.azurecr.io }}/my-nodejs-app:${{ github.sha }}
