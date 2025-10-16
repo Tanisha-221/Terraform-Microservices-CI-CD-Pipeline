@@ -62,7 +62,7 @@ jobs:
           ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
           ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
           ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
-      run: terraform apply -input=false
+      run: terraform apply -auto-approve -input=false
 
     # Install or update Azure CLI
     - name: Install Azure CLI
@@ -91,11 +91,11 @@ jobs:
         jq empty publish-profile.json || { echo "❌ publish-profile.json is invalid JSON!"; exit 1; }
 
     # Upload the validated publish-profile.json 
-    - name: Upload validated publish-profile.json
-      uses: actions/upload-artifact@v4
-      with:
-        name: publish-profile
-        path: Infra-Terraform/publish-profile.json
+    # - name: Upload validated publish-profile.json
+    # uses: actions/upload-artifact@v4
+    #  with:
+    #   name: publish-profile
+    #    path: Infra-Terraform/publish-profile.json
 
     # Generate and validate terraform-output.json
     - name: Generate and validate Terraform output (JSON)
@@ -104,6 +104,11 @@ jobs:
         echo "🔧 Generating terraform-output.json..."
         terraform output -json > terraform-output.json
 
+        if [[ ! -s terraform-output.json ]]; then
+           echo "☠️ terraform-output.json is empty!"
+           exit 1
+        fi
+
         echo "📄 Verifying JSON format for terraform-output.json..."
         jq empty terraform-output.json || { echo "❌ terraform-output.json is invalid JSON!"; exit 1; }
 
@@ -111,25 +116,35 @@ jobs:
         # echo "🔧 Extracting publish profile..."
         # jq '.app_service_publish_profile.value' terraform-output.json > publish-profile.json
 
-        echo "📄 Verifying JSON format for publish-profile.json..."
-        jq empty publish-profile.json || { echo "❌ publish-profile.json is invalid JSON!"; exit 1; }
-
         echo "✅ Valid JSON files generated"
         echo "📄 terraform-output.json contents:"
         cat terraform-output.json
 
-        echo "📄 publish-profile.json contents:"
-        cat publish-profile.json
+        # echo "📄 publish-profile.json contents:"
+        # cat publish-profile.json
 
         echo "📊 File sizes:"
         ls -lh terraform-output.json publish-profile.json
       working-directory: ./Infra-Terraform
 
-    # Upload the validated output
-    - name: Upload validated terraform-output.json
-      if: ${{ github.ref == 'refs/heads/main' }}
+    - name: Package Terraform Plan and publish profile
+      run: |
+         mkdir combined_artifacts
+         cp terraform-output.json combined_artifacts/
+         cp publish-profile.json combined_artifacts/
+         zip -r combined_artifacts.zip combined_artifacts
+
+     # Upload the validated output
+     # - name: Upload validated terraform-output.json
+     # if: ${{ github.ref == 'refs/heads/main' }}
+     # uses: actions/upload-artifact@v4
+     # with:
+    #  name: terraform-output
+    #    path: |
+    #    Infra-Terraform/terraform-output.json
+
+    - name: Upload combined artifactss
       uses: actions/upload-artifact@v4
-      with:
-        name: terraform-output
-        path: |
-         Infra-Terraform/terraform-output.json
+      with: 
+         name: terraform-publish-profile-artifacts-${{ github.run_id }}
+         path: combined_artifacts.zip
