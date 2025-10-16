@@ -14,7 +14,6 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    uses: .github/workflows/Docker-CI.yml
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -22,33 +21,52 @@ jobs:
     - name: Azure Login
       uses: azure/login@v1
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        creds: ${{ secrets.AZURE_CREDENTIALS a}}
 
-
-      # Reuse ACR login step (relying on outputs from CI)
-    - name: Login to Azure Container Registry
+    - name: Download ACR Credentials artifact using GitHub API
       run: |
-          echo "${{ needs.ci.outputs.password }}" | docker login ${{ needs.ci.outputs.loginServer }} -u ${{ needs.ci.outputs.username }} --password-stdin
-        # This step will use the ACR login values from the CI pipeline outputs
+          # Fetch the artifact using the GitHub API
+          API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
+          
+          # Get the artifact ID
+          artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
 
-    - name: Fetch publish profile using Azure CLI
+          if [ -z "$artifact_id" ]; then
+            echo "No artifact found!"
+            exit 1
+          fi
+
+          # Download the artifact zip file
+          curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
+
+      # Step 3: Unzip and Extract ACR credentials
+    - name: Unzip and Extract ACR credentials
       run: |
-        echo "Fetching publish profile from Azure..."
-        az webapp deployment list-publishing-profiles \
-          --name T-node-web-app \
-          --resource-group T-microservices-project \
-          --query "[0].publishProfile" \
-          --output json > publish-profile.json
+          unzip terraform-output.zip -d ./downloaded-artifacts
+          ls -lh ./downloaded-artifacts
 
-        # Verify the downloaded publish profile
-        ls -lh publish-profile.json
-        cat publish-profile.json
-  
-      env:
-        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          # Check if acr-credentials.json exists
+          if [ ! -f ./downloaded-artifacts/acr-credentials.json ]; then
+            echo "ACR credentials file not found!"
+            exit 1
+          fi
+
+          # Parse credentials from the JSON file
+          ACR_LOGIN_SERVER=$(jq -r '.loginServer' ./downloaded-artifacts/acr-credentials.json)
+          ACR_USERNAME=$(jq -r '.username' ./downloaded-artifacts/acr-credentials.json)
+          ACR_PASSWORD=$(jq -r '.password' ./downloaded-artifacts/acr-credentials.json)
+
+          # Output the values to use later in the pipeline
+          echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+          echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
+      # Step 4: Docker Login to Azure Container Registry
+    - name: Docker Login to Azure Container Registry
+      run: |
+          echo "${{ steps.deploy.outputs.password }}" | docker login ${{ steps.deploy.outputs.loginServer }} -u ${{ steps.deploy.outputs.username }} --password-stdin
+
+      # Optional Docker Build steps can be added here, e.g., to build and push Docker images.
 
     - name: Validate publish-profile.json
       run: |
