@@ -175,16 +175,9 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         build-args: |
           BUILDKIT_INLINE_CACHE=1
-        log-level: debug
 
-    - name: Run Trivy Scan
-      uses: aquasecurity/trivy-action@0.28.0
-      with:
-        image: ${{ steps.tf.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
-        format: 'table' # Change this to 'json' if you want to parse results later
-        severity: 'HIGH,CRITICAL' # Fail if HIGH or CRITICAL vulnerabilities are found
-        skip-update: false # Set this to true to skip the database update step (less secure)
-        continue-on-error: true
+    - name: Docker Scan
+      run: docker scan ${{ steps.meta.outputs.tags }}
 
     - name: Upload ACR credentials as artifacts
       uses: actions/upload-artifact@v4
