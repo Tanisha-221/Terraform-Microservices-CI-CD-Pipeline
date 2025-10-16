@@ -14,10 +14,6 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    outputs: 
-      loginServer: ${{ steps.tf.outputs.loginServer }}
-      username: ${{ steps.tf.outputs.username }}
-      password: ${{ steps.tf.outputs.password }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -27,60 +23,12 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Install jq
-      run: sudo apt-get install jq 
 
-    - name: Download artifact using GitHub API
-      run: |
-         # Define the GitHub API URL
-         API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
-    
-         # Fetch artifact ID using GitHub API
-         artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
-         
-         # Download the artifact (acr-credentials.zip)
-         curl -L -o acr-credentials.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
-
-         # List the files in the downloaded zip before extracting
-         unzip -l acr-credentials.zip  # This will list the contents of the zip file
-
-         # Unzip the artifact into the ./downloaded-artifacts directory
-         unzip acr-credentials.zip -d ./downloaded-artifacts
-
-         # Verify the contents of the artifact
-         ls -lh ./downloaded-artifacts
-
-    - name: Verify terraform-output.json exists
-      run: |
-        # Check if terraform-output.json exists after unzipping
-        if [ ! -f ./downloaded-artifacts/terraform-output.json ]; then
-          echo "🤷‍♀️ terraform-output.json not found!"
-          exit 1
-        else
-          echo "😁 terraform-output.json found!"
-        fi
-
-    - name: Parse ACR values from Terraform output
-      id: tf
-      run: |
-        # Ensure the terraform-output.json file exists
-        if [[ ! -f ./downloaded-artifacts/terraform-output.json ]]; then
-          echo "Terraform output file not found!"
-          exit 1
-        fi
-
-        # Extract the ACR login server, username, and password from the terraform output JSON
-        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' ./downloaded-artifacts/terraform-output.json)
-        ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/terraform-output.json)
-        ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/terraform-output.json)
-
-        # Set the extracted values as outputs
-        echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-        echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
-        echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
-
+      # Reuse ACR login step (relying on outputs from CI)
     - name: Login to Azure Container Registry
-      run: echo "${{ steps.tf.outputs.password }}" | docker login ${{ steps.tf.outputs.loginServer }} -u ${{ steps.tf.outputs.username }} --password-stdin
+      run: |
+          echo "${{ needs.ci.outputs.password }}" | docker login ${{ needs.ci.outputs.loginServer }} -u ${{ needs.ci.outputs.username }} --password-stdin
+        # This step will use the ACR login values from the CI pipeline outputs
 
     - name: Fetch publish profile using Azure CLI
       run: |
@@ -122,4 +70,4 @@ jobs:
         app-name: 'T-node-web-app'
         slot-name: 'production'
         publish-profile: ${{ env.publish_profile }}  # Use the extracted publish profile here
-        images: ${{ steps.tf.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
+        images: ${{ needs.ci.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
