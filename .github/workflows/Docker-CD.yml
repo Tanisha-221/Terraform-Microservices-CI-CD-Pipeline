@@ -37,12 +37,11 @@ jobs:
           fi
 
           # Download the artifact zip file
-          curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
+          curl -L -o acr-credentials.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
 
-      # Step 3: Unzip and Extract ACR credentials
-    - name: Unzip and Extract ACR credentials
+    - name: Unzip ACR Credentials artifact
       run: |
-          unzip terraform-output.zip -d ./downloaded-artifacts
+          unzip acr-credentials.zip -d ./downloaded-artifacts
           ls -lh ./downloaded-artifacts
 
           # Check if acr-credentials.json exists
@@ -60,11 +59,10 @@ jobs:
           echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
           echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
           echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
-          
+
     - name: List files in downloaded artifacts directory (debugging)
       run: ls -R ./downloaded-artifacts
 
-      # Step 4: Docker Login to Azure Container Registry
     - name: Docker Login to Azure Container Registry
       run: |
         echo ${{ steps.deploy.outputs.password }} | docker login ${{ steps.deploy.outputs.loginServer }} -u ${{ steps.deploy.outputs.username }} --password-stdin
@@ -73,7 +71,22 @@ jobs:
         ACR_PASSWORD: ${{ steps.deploy.outputs.password }}
         ACR_LOGIN_SERVER: ${{ steps.deploy.outputs.loginServer }}
 
-      # Optional Docker Build steps can be added here, e.g., to build and push Docker images.
+    - name: Fetch publish profile using Azure CLI
+      run: |
+        az webapp deployment list-publishing-profiles \
+        --name T-node-web-app \
+        --resource-group T-microservices-project \
+        --query "[0].publishProfile" \
+        --output json > publish-profile.json
+
+        ls -lh publish-profile.json
+
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
     - name: Validate publish-profile.json
       run: |
         echo "📄 Verifying JSON format for publish-profile.json..."
