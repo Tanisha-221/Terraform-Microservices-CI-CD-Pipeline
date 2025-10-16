@@ -90,6 +90,20 @@ jobs:
         echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
         echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
 
+         # Write credentials to a JSON file for artifact upload
+        echo '{
+          "loginServer": "'$ACR_LOGIN_SERVER'",
+          "username": "'$ACR_USERNAME'",
+          "password": "'$ACR_PASSWORD'"
+        }' > acr-credentials.json
+
+    # Upload ACR credentials as an artifact
+    - name: Upload ACR Credentials as Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: acr-credentials
+        path: acr-credentials.json
+        
     - name: Setup Node.js environment
       uses: actions/setup-node@v3
       with:
@@ -158,22 +172,3 @@ jobs:
     - name: Docker Scan
       run: docker scan ${{ steps.meta.outputs.tags }}
       continue-on-error: true
-
-    - name: Parse ACR values from Terraform output
-      id: tf
-      run: |
-          # Ensure the terraform-output.json file exists
-          if [[ ! -f ./downloaded-artifacts/combined_artifacts/terraform-output.json ]]; then
-            echo "Terraform output file not found!"
-            exit 1
-          fi
-
-          # Extract the ACR login server, username, and password from the terraform output JSON
-          ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
-          ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
-          ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
-
-          # Set the extracted values as outputs
-          echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-          echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
-          echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
