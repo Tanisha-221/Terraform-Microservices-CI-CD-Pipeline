@@ -60,6 +60,11 @@ jobs:
           echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
           echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
 
+    - name: View contents of acr-credentials.json (for debugging)
+      run: |
+         cat ./downloaded-artifacts/acr-credentials.json
+
+
     - name: List files in downloaded artifacts directory (debugging)
       run: ls -R ./downloaded-artifacts
 
