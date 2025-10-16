@@ -50,7 +50,7 @@ jobs:
     - name: Download combined artifacts 
       uses: actions/download-artifacts@v4
       with:
-        name: terraform-publish-profile-artifact
+        name: terraform-publish-profile-artifact-${{ github.run_id }}
 
     - name: Extract the artifacts
       run: |
@@ -67,12 +67,12 @@ jobs:
       run: |
          cat ./download-artifacts/terraform-output.json
          cat ./download-artifacts/publish-profile.json
-         
+
     - name: Parse ACR values from Terraform output
       id: tf
       run: |
         # Ensure the file exists and is properly downloaded
-        if [[ ! -f ./downloaded-artifacts/terraform-output.json ]]; then
+        if [[ ! -f ./download-artifacts/terraform-output.json ]]; then
           echo "Terraform output file not found!"
           exit 1
         fi
