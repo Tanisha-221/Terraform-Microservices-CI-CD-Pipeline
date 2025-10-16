@@ -90,22 +90,22 @@ jobs:
 
     - name: Parse and use the downloaded Terraform output and Publish Profile
       run: |
-         cat ./downloaded-artifacts/terraform-output.json
-         cat ./downloaded-artifacts/publish-profile.json
+         cat ./downloaded-artifacts/combined_artifacts/terraform-output.json
+         cat ./downloaded-artifacts/combined_artifacts/publish-profile.json
 
     - name: Parse ACR values from Terraform output
       id: tf
       run: |
         # Ensure the file exists and is properly downloaded
-        if [[ ! -f ./download-artifacts/terraform-output.json ]]; then
+        if [[ ! -f ./downloaded-artifacts/combined_artifacts/terraform-output.json ]]; then
           echo "Terraform output file not found!"
           exit 1
         fi
 
         # Extract the ACR login server, username, and password from the downloaded JSON
-        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' ./downloaded-artifacts/terraform-output.json)
-        ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/terraform-output.json)
-        ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/terraform-output.json)
+        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
+        ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
+        ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
 
         echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
         echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
