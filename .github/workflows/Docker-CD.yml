@@ -1,10 +1,10 @@
 name: Docker Image CD
 
 on:
-    workflow_run:
-      workflows: ["Docker Image CI"]
-      types:
-        - completed
+  workflow_run:
+    workflows: ["Docker Image CI"]
+    types:
+      - completed
   
 jobs:
   deploy:
@@ -17,31 +17,58 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Download Terraform outputs artifact
-      uses: actions/download-artifact@v4
-      with:
-         name: terraform-output
-         path: ./terraform-outputs
-
-    - name: Parse ACR credentials from Terraform output
-      id: acr
+    - name: Download artifact using GitHub API
       run: |
-        ACR_LOGIN_SERVER=$(jq -r '.acr_login_server.value' terraform-outputs/terraform-output.json)
-        ACR_USERNAME=$(jq -r '.acr_username.value' terraform-outputs/terraform-output.json)
-        ACR_PASSWORD=$(jq -r '.acr_password.value' terraform-outputs/terraform-output.json)
+        # Define the GitHub API URL
+        API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
+        
+        # Fetch artifact ID using GitHub API
+        artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
+        
+        # Download the artifact
+        curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
+        
+        # List the files in the downloaded zip before extracting
+        unzip -l terraform-output.zip  # This will list the contents of the zip file
+        
+        # Unzip the artifact
+        unzip terraform-output.zip -d ./downloaded-artifacts
 
-        echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_ENV
-        echo "username=$ACR_USERNAME" >> $GITHUB_ENV
-        echo "password=$ACR_PASSWORD" >> $GITHUB_ENV
+        # Verify contents of the artifact
+        ls -lh ./downloaded-artifacts
 
-    - name: Parse Publish Profile for Azure Web App deploy
-      id: publish-profile
+    - name: Fetch publish profile using Azure CLI
       run: |
-        cat terraform-outputs/publish-profile.json > publish-profile.txt
-        echo "publish_profile=$(cat publish-profile.txt)" >> $GITHUB_OUTPUT
+        echo "Fetching publish profile from Azure..."
+        az webapp deployment list-publishing-profiles \
+          --name T-node-web-app \
+          --resource-group T-microservices-project \
+          --query "[0].publishProfile" \
+          --output json > publish-profile.json
 
-    - name: Login to Azure Container Registry
-      run: echo "${{ env.password }}" | docker login ${{ env.loginServer }} -u ${{ env.username }} --password-stdin
+        # Verify the downloaded publish profile
+        ls -lh publish-profile.json
+        cat publish-profile.json
+  
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+    - name: Validate publish-profile.json
+      run: |
+        echo "📄 Verifying JSON format for publish-profile.json..."
+        jq empty publish-profile.json || { echo "❌ publish-profile.json is invalid JSON!"; exit 1; }
+
+    - name: Extract publish profile details
+      run: |
+        echo "📄 Extracting publish profile details..."
+        # Extract the publish profile value
+        PUBLISH_PROFILE=$(jq -r '.[0].publishProfile' publish-profile.json)
+
+        # Set the publish profile as an environment variable
+        echo "publish_profile=$PUBLISH_PROFILE" >> $GITHUB_ENV
 
     - name: Deploy to Azure Web App
       id: deploy-to-webapp
@@ -49,5 +76,5 @@ jobs:
       with:
         app-name: 'T-node-web-app'
         slot-name: 'production'
-        publish-profile: ${{ steps.publish-profile.outputs.publish_profile }}
-        images: ${{env.loginServer}}/my-nodejs-app:${{ github.sha }}
+        publish-profile: ${{ env.publish_profile }}  # Use the extracted publish profile here
+        images: ${{ secrets.ACR_LOGIN_SERVER }}/my-nodejs-app:${{ github.sha }}

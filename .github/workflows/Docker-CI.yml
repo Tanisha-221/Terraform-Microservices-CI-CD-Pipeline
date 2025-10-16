@@ -67,9 +67,19 @@ jobs:
          # Verify contents of the artifact
          ls -lh ./downloaded-artifacts
 
+    - name: Verify combined_artifacts.zip exists
+      run: |
+        # check if the combined_artifacts.zip file exists before unzipping
+        if [ ! -f ./downloaded-artifacts/combined_artifacts.zip ]; then
+          echo "🤷‍♀️ combined_artifacts.zip not found!"
+          exit 1
+        else
+          echo "😁 combined_artifacts.zip found!"
+        fi
+
     - name: Unzip combined artifacts 
       run: |
-        unzip combined_artifacts.zip -d ./downloaded-artifacts
+        unzip ./downloaded-artifacts/combined_artifacts.zip -d ./downloaded-artifacts
 
     - name: Verify contents of download artifacts
       run: |
