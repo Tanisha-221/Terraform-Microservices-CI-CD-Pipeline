@@ -165,9 +165,15 @@ jobs:
          name: acr-credentials
          path: |
            Infra-Terraform/terraform-outputs/terraform-output.json
+    
+    - name: Package Terraform Plan and publish profile
+      run: |
+         mkdir artifacts
+         cp terraform-output.json artifacts/
+         zip -r artifacts.zip artifacts
 
-    - name: Upload Terraform Output artifact
+    - name: Upload combined artifactss
       uses: actions/upload-artifact@v4
-      with:
-         name: terraform-output
-         path: ./downloaded-artifacts/combined_artifacts/terraform-output.json
+      with: 
+         name: terraform-publish-profile-artifacts-${{ github.run_id }}
+         path: artifacts.zip   
