@@ -47,26 +47,41 @@ jobs:
 
       #    cat ./downloaded-artifacts/terraform-output.json
 
-    - name: Download combined artifacts 
-      uses: actions/download-artifacts@v4
-      with:
-        name: terraform-publish-profile-artifact-${{ github.run_id }}
-
-    - name: Extract the artifacts
+    - name: Download artifact using GitHub API
       run: |
-        unzip combined_artifacts.zip -d ./download-artifacts
+         # Define the GitHub API URL
+         API_URL="https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/runs/${{ github.event.workflow_run.id }}/artifacts"
+    
+         # Fetch artifact ID using GitHub API
+         artifact_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $API_URL | jq -r '.artifacts[0].id')
+    
+         # Download the artifact
+         curl -L -o terraform-output.zip -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/Tanisha-221/Terraform-Microservices-CI-CD-Pipeline/actions/artifacts/$artifact_id/zip"
+    
+         # List the files in the downloaded zip before extracting
+         unzip -l terraform-output.zip  # This will list the contents of the zip file
+    
+         # Unzip the artifact
+         unzip terraform-output.zip -d ./downloaded-artifacts
+
+         # Verify contents of the artifact
+         ls -lh ./downloaded-artifacts
+
+    - name: Unzip combined artifacts 
+      run: |
+        unzip combined_artifacts.zip -d ./downloaded-artifacts
 
     - name: Verify contents of download artifacts
       run: |
-        ls -lh ./download-artifacts
+        ls -lh ./downloaded-artifacts
 
     - name: List files in downloaded artifacts directory (debugging)
-      run: ls -R ./download-artifacts
+      run: ls -R ./downloaded-artifacts
 
     - name: Parse and use the downloaded Terraform output and Publish Profile
       run: |
-         cat ./download-artifacts/terraform-output.json
-         cat ./download-artifacts/publish-profile.json
+         cat ./downloaded-artifacts/terraform-output.json
+         cat ./downloaded-artifacts/publish-profile.json
 
     - name: Parse ACR values from Terraform output
       id: tf

@@ -147,4 +147,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with: 
          name: terraform-publish-profile-artifacts-${{ github.run_id }}
-         path: combined_artifacts.zip
+         path: Infra-Terraform/combined_artifacts.zip
