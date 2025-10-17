@@ -72,6 +72,15 @@ jobs:
          cat ./downloaded-artifacts/combined_artifacts/terraform-output.json
          cat ./downloaded-artifacts/combined_artifacts/publish-profile.json
 
+         # Parse credentials from the JSON file
+          ACR_LOGIN_SERVER=$(jq -r '.loginServer' ./downloaded-artifacts/acr-credentials.json)
+          ACR_USERNAME=$(jq -r '.username' ./downloaded-artifacts/acr-credentials.json)
+          ACR_PASSWORD=$(jq -r '.password' ./downloaded-artifacts/acr-credentials.json)
+
+          echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_ENV
+          echo "username=$ACR_USERNAME" >> $GITHUB_ENV
+          echo "password=$ACR_PASSWORD" >> $GITHUB_ENV
+
     - name: Parse ACR values from Terraform output
       id: tf
       run: |
@@ -137,7 +146,9 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Login to Azure Container Registry
-      run: echo "${{ steps.tf.outputs.password }}" | docker login ${{ steps.tf.outputs.loginServer }} -u ${{ steps.tf.outputs.username }} --password-stdin
+      run: |
+         echo "${{ env.password }}" | docker login --username "${{ env.username }}" --password-stdin "${{ env.loginServer }}"
+
 
     - name: Install SonarQube Scanner
       run: npm install -g sonar-scanner
