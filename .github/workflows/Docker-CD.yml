@@ -14,10 +14,6 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    outputs:
-      loginServer: ${{ steps.deploy.outputs.loginServer }}
-      username: ${{ steps.deploy.outputs.username }}
-      password: ${{ steps.deploy.outputs.password }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -54,10 +50,9 @@ jobs:
           ACR_USERNAME=$(jq -r '.username' ./downloaded-artifacts/acr-credentials.json)
           ACR_PASSWORD=$(jq -r '.password' ./downloaded-artifacts/acr-credentials.json)
 
-          # Output the values to use later in the pipeline
-          echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-          echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
-          echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+          echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_ENV
+          echo "username=$ACR_USERNAME" >> $GITHUB_ENV
+          echo "password=$ACR_PASSWORD" >> $GITHUB_ENV
 
     - name: View contents of acr-credentials.json (for debugging)
       run: |
@@ -73,11 +68,7 @@ jobs:
 
     - name: Login to Azure Container Registry
       run: |
-         echo "${{ steps.deploy.outputs.password }}" | docker login --username "${{ steps.deploy.outputs.username }}" --password-stdin "${{ steps.deploy.outputs.loginServer }}"
-      env:
-          ACR_USERNAME: ${{ steps.deploy.outputs.username }}
-          ACR_PASSWORD: ${{ steps.deploy.outputs.password }}
-          ACR_LOGIN_SERVER: ${{ steps.deploy.outputs.loginServer }}
+         echo "${{ env.password }}" | docker login --username "${{ env.username }}" --password-stdin "${{ env.loginServer }}"
 
     - name: Fetch publish profile using Azure CLI
       run: |
