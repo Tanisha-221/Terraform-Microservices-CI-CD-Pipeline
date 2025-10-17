@@ -155,7 +155,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
-        images: ${{ steps.tf.outputs.loginServer }}/my-nodejs-app
+        images: ${{ env.loginServer }}/my-nodejs-app
         tags: |
           latest
           ${{ github.sha }}
@@ -166,13 +166,16 @@ jobs:
         login-server: ${{ env.loginServer }}
         username: ${{ env.username }}
         password: ${{ env.password }}
-        context: .
-        file: ./dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        build-args: |
-          BUILDKIT_INLINE_CACHE=1
+        #context: .
+        #file: ./dockerfile
+        #push: true
+        #tags: ${{ steps.meta.outputs.tags }}
+        #labels: ${{ steps.meta.outputs.labels }}
+        #build-args: |
+        #  BUILDKIT_INLINE_CACHE=1
+      run: |
+           docker build . -t ${{ env.loginServer }}/my-nodejs-app:latest
+           docker push ${{ env.loginServer }}/my-nodejs-app:latest
 
     - name: Docker Scan
       run: docker scan ${{ steps.meta.outputs.tags }}
