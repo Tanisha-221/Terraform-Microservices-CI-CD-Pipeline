@@ -174,8 +174,8 @@ jobs:
         #build-args: |
         #  BUILDKIT_INLINE_CACHE=1
     - run: |
-           docker build . -t ${{ env.loginServer }}/my-nodejs-app:latest
-           docker push ${{ env.loginServer }}/my-nodejs-app:latest
+       docker build . -t ${{ env.loginServer }}/my-nodejs-app:latest
+       docker push ${{ env.loginServer }}/my-nodejs-app:latest
 
     - name: Docker Scan
       run: docker scan ${{ steps.meta.outputs.tags }}
