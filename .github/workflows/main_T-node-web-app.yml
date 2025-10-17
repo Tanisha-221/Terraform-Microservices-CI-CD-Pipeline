@@ -23,14 +23,14 @@ jobs:
       uses: docker/login-action@v2
       with:
         registry: https://myacrdockerregistry123.azurecr.io/
-        username: ${{ secrets.AzureAppService_ContainerUsername_e1a748f258b5469890d771ac153aac61 }}
-        password: ${{ secrets.AzureAppService_ContainerPassword_9eacb32aee9449e199212d0fcfd4baf6 }}
+        username: ${{ secrets.AzureAppService_ContainerUsername_b074ebc5d84d4f93a5a9351867952e03 }}
+        password: ${{ secrets.AzureAppService_ContainerPassword_c8723c1a8895414cb1211fa5e9f0e6fb }}
 
     - name: Build and push container image to registry
       uses: docker/build-push-action@v3
       with:
         push: true
-        tags: myacrdockerregistry123.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_e1a748f258b5469890d771ac153aac61 }}//my-nodejs-app:${{ github.sha }}
+        tags: myacrdockerregistry123.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_b074ebc5d84d4f93a5a9351867952e03 }}/my-nodejs-app:${{ github.sha }}
         file: ./Dockerfile
 
   deploy:
@@ -47,5 +47,5 @@ jobs:
       with:
         app-name: 'T-node-web-app'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_67039dfeed9c4a58a41eb6d47e920dc5 }}
-        images: 'myacrdockerregistry123.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_e1a748f258b5469890d771ac153aac61 }}//my-nodejs-app:${{ github.sha }}'
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_dfd111c823b64dc5b17029d812c3d579 }}
+        images: 'myacrdockerregistry123.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_b074ebc5d84d4f93a5a9351867952e03 }}/my-nodejs-app:${{ github.sha }}'
