@@ -86,9 +86,9 @@ jobs:
         ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
         ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
 
-        echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-        echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
-        echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+        echo "🚀loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+        echo "👀username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+        echo "🔒password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
 
          # Write credentials to a JSON file for artifact upload
         echo '{
