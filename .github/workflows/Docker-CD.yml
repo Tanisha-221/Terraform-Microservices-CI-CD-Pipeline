@@ -107,4 +107,4 @@ jobs:
         app-name: 'T-node-web-app'
         slot-name: 'production'
         publish-profile: ${{ env.publish_profile }}  # Use the extracted publish profile here
-        images: ${{ steps.deploy.outputs.loginServer }}/my-nodejs-app:${{ github.sha }}
+        images: ${{ env.loginServer }}/my-nodejs-app:latest
