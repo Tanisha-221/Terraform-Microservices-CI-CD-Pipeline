@@ -107,7 +107,7 @@ jobs:
     - name: Login to Azure Container Registry
       uses: docker/login-action@v2
       with:
-        login-server: ${{ env.loginServer }}
+        registry: ${{ env.loginServer }}
         username: ${{ env.username }}
         password: ${{ env.password }}y
 
