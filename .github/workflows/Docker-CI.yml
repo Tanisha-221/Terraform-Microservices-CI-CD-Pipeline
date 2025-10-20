@@ -86,9 +86,9 @@ jobs:
         ACR_USERNAME=$(jq -r '.acr_username.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
         ACR_PASSWORD=$(jq -r '.acr_password.value' ./downloaded-artifacts/combined_artifacts/terraform-output.json)
 
-        echo "🚀loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_ENV
-        echo "👀username=$ACR_USERNAME" >> $GITHUB_ENV
-        echo "🔒password=$ACR_PASSWORD" >> $GITHUB_ENV
+        echo "loginServer=$ACR_LOGIN_SERVER" >> $GITHUB_ENV
+        echo "username=$ACR_USERNAME" >> $GITHUB_ENV
+        echo "password=$ACR_PASSWORD" >> $GITHUB_ENV
 
          # Write credentials to a JSON file for artifact upload
         echo '{
@@ -107,9 +107,10 @@ jobs:
     - name: Login to Azure Container Registry
       uses: docker/login-action@v2
       with:
-        registry: ${{ env.loginServer }}
-        username: ${{ env.username }}
-        password: ${{ env.password }}y
+          registry: ${{ env.loginServer }}  # Correct input: registry, not login-server
+          username: ${{ env.username }}     # Use the extracted ACR username
+          password: ${{ env.password }}     # Use the extracted ACR password
+
 
     - name: Setup Node.js environment
       uses: actions/setup-node@v3
