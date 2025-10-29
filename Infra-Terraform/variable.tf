@@ -1,7 +1,7 @@
 variable "acr_name" {
   description = "Name of the Azure Container Registry"
   type        = string
-  default     = "mydockerregistry123"
+  default     = "myacrdockerregistry123"
 }
 
 variable "acr_sku" {
